@@ -1,3 +1,7 @@
+
+
+
+
 install.packages("naniar")
 
 library(tidyverse)
@@ -58,6 +62,7 @@ sapply(client_data, class)
 client_data$default.payment.next.month <- as.numeric(client_data$default.payment.next.month)
 r = cor(client_data[-c(3, 4, 5)])
 corrplot(r)
+plot_histo
 
 #plot client_data$default.payment.next.month
 
@@ -68,10 +73,26 @@ mean(client_data$default.payment.next.month==1)
 #[1] 6636 [1] 0.2212
 
 sum(client_data$default.payment.next.month==0)
+p <-mean(client_data$default.payment.next.month==0)
+
+set.seed(NULL)
+B <-1000
+default_simple <- replicate(B,{
+  d <- sample(c(0,1),30000,prob=c(p, 1-p),replace=T)
+ }) 
+
+mean(default_simple[,145]==client_data$default.payment.next.month)
+
+sample <-sample(c(0,1),30000,prob=c(p, 1-p),replace=T)
+mean(sample==client_data$default.payment.next.month)
+
+
 mean(client_data$default.payment.next.month==0)
 #[1] 23364 [1] 0.7788
 
 #high default rate!
 
+rowMeans(default_simple)
+mean(default_simple[,1:1000]==client_data$default.payment.next.month)
 
-
+plot_correlation(na.omit(data), maxcat = 5L)
