@@ -8,6 +8,14 @@ garment <-read.csv(url,stringsAsFactors=T)
 str(garment)
 summary(garment)
 
+
+
+
+
+
+
+
+
 set.seed(1, sample.kind = "Rounding")
 test_index <- createDataPartition(garment$actual_productivity, p=0.2, list=F, times=1)
 test_set <- garment[test_index,]
