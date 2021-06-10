@@ -14,8 +14,9 @@ plot_histogram(original_default, nrow=3, ncol=4)
 plot_correlation(original_default)
 
 ####################
-#logistic regression
+#baseline prediction
 ####################
+
 
 #remove ID
 original_default <- original_default %>% select(-ID)
@@ -31,6 +32,20 @@ set.seed(2021, sample.kind = "Rounding")
 test_index <- createDataPartition(original_default$default.payment.next.month, p=0.2, list=F, times=1)
 test_set <- original_default[test_index,]
 train_set <- original_default[-test_index,]
+
+
+####################
+#baseline prediction
+####################
+
+#all predicted as non=default
+base_pred <-factor(numeric(length(test_set$default.payment.next.month)),levels=c("0","1"))
+confusionMatrix(base_pred, as.factor(test_set$default.payment.next.month))
+
+
+####################
+#logistic regression
+####################
 
 #model
 glm_default <- glm(default.payment.next.month ~., data = train_set, family = binomial(link = "logit"))
