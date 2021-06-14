@@ -251,10 +251,11 @@ glm_mdl <- glm(
 
 summary(glm_mdl)
 
-glm_prob <- predict(glm_mdl, test_set, type="response")
+glm_prob <- predict(glm_mdl, test_set,type="response")
 ggplot(data=data.frame(glm_prob),aes(glm_prob))+ geom_histogram(bins = 50)
 
 glm_pred <- ifelse(glm_prob >0.5,1,0)
+
 
 confusionMatrix(as.factor(glm_pred), test_set$DEFAULT)
 #Accuracy : 0.8122  Sensitivity : 0.9741 
@@ -416,5 +417,16 @@ confusionMatrix(as.factor(new_rf_tuned_pred),test_set$DEFAULT)
 #Balanced Accuracy : 0.6620   
 
 varImp(new_rf_tuned_mdl)
+
+#ensemble
+ensemble <- 
+  cbind(rf =new_rf_tuned_pred,rpart = rpart_tuned_pred,glm= as.factor(glm_pred))
+ensemble_preds <- ifelse(rowMeans(ensemble) > 1.5, 1, 0)
+confusionMatrix(as.factor(ensemble_preds),test_set$DEFAULT)
+#Accuracy : 0.8242
+#Sensitivity : 0.9555
+#Specificity : 0.3622  
+#Balanced Accuracy : 0.6588
+
 
 ###############################################################################
