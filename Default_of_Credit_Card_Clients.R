@@ -1,0 +1,365 @@
+library(tidyverse)
+library(caret)
+#install.packages("DataExplorer")
+#library(DataExplorer)
+library(rpart)
+install.packages("rpart.plot")
+library(rpart.plot)
+library(pROC)
+install.packages("caTools")
+library(caTools)
+
+url <-"https://github.com/masa951125/Final_project/raw/main/UCI_Credit_Card.csv"
+download.file(url, "original_default.csv")
+original_default <- read_csv("original_default.csv")
+
+
+##################
+#Data exploration
+##################
+
+#check dataset
+str(original_default)
+summary(original_default)
+#no NAs
+
+#remove ID
+original_default <- original_default %>% select(-ID)
+
+#change name of "default.payment.next.month"
+n <-which(names(original_default)=="default.payment.next.month")
+names(original_default)[n] <- "DEFAULT"
+
+###############################
+#data exploration and cleansing
+###############################
+
+#outcomes ~ DEFAULT
+#change it into factor
+
+original_default$DEFAULT <- as.factor(original_default$DEFAULT)
+ggplot(data=original_default, aes(DEFAULT)) +geom_bar()
+
+mean(original_default$DEFAULT==1)
+#[1] 0.2212
+
+#1 LIMIT_BAL
+
+summary(original_default$LIMIT_BAL)
+ggplot(data=original_default, aes(LIMIT_BAL),fill=DEFAULT) +geom_histogram()
+
+#2 SEX
+
+gender <- ifelse(original_default$SEX == 1, "male", "female")
+
+original_default %>% ggplot(aes(x=gender, fill= DEFAULT)) +
+  geom_bar() +
+  ggtitle("SEX")
+
+#stacked bar graph
+original_default %>% ggplot(aes(x=gender, fill= DEFAULT)) +
+  geom_bar(position="fill") +
+  ggtitle("SEX")
+#There seemed to be little difference between genders.
+
+#3 EDUCATION
+
+unique(original_default$EDUCATION)
+#1=graduate school, 2=university, 3=high school, 4=others, 5=unknown, 6=unknown
+#[1] 2 1 3 5 4 6 0
+#O is not defined. 0,5 and 6 can be included into 4 
+
+original_default$EDUCATION <- ifelse(original_default$EDUCATION== 0|
+                                       original_default$EDUCATION == 5|
+                                       original_default$EDUCATION == 6, 4,
+                                     original_default$EDUCATION)
+
+original_default %>% ggplot(aes(x=as.factor(EDUCATION), fill= DEFAULT)) +
+  geom_bar() +
+  ggtitle("EDUCATION")
+
+#stacked bar graph
+original_default %>% ggplot(aes(x=as.factor(EDUCATION), fill= DEFAULT)) +
+  geom_bar(position="fill") +
+  ggtitle("EDUCATION")
+# 4 is the smallest in terms of default rate. but its numbers are very small.
+
+#4 marriage
+
+unique(original_default$ MARRIAGE)
+#MARRIAGE: Marital status (1=married, 2=single, 3=others)
+#[1] 1 2 3 0
+#O is not defined. 0 can be included in 3 
+
+original_default$MARRIAGE <- ifelse(original_default$MARRIAGE== 0, 3,
+                                     original_default$MARRIAGE)
+
+original_default %>% ggplot(aes(x=as.factor(MARRIAGE), fill= DEFAULT)) +
+  geom_bar() +
+  ggtitle("MARRIAGE")
+
+#stack bar graph
+original_default %>% ggplot(aes(x=as.factor(MARRIAGE), fill= DEFAULT)) +
+  geom_bar(position="fill") +
+  ggtitle("MARRIAGE")
+
+# There seems to be little difference among the groups.
+
+#5 AGE
+
+summary(original_default$AGE)
+ggplot(data=original_default, aes(AGE)) +geom_histogram()
+
+#6 PAY
+
+#PAY_0
+summary(original_default$PAY_0)
+unique(original_default$PAY_0)
+
+original_default %>% ggplot(aes(x=as.factor(PAY_0), fill= DEFAULT)) +
+  geom_bar() +
+  ggtitle("PAY_0")+
+  stat_count(aes(label = ..count..), geom = "label")
+
+#stack bar graph PAY_0
+graph_P0 <-original_default %>% ggplot(aes(x=as.factor(PAY_0), fill= DEFAULT)) +
+  geom_bar(position="fill") +
+  ggtitle("PAY_0")
+
+#PAY_2
+original_default %>% ggplot(aes(x=as.factor(PAY_2), fill= DEFAULT)) +
+  geom_bar() +
+  ggtitle("PAY_2")+
+  stat_count(aes(label = ..count..), geom = "label")
+
+graph_P2 <-original_default %>% ggplot(aes(x=as.factor(PAY_2), fill= DEFAULT)) +
+  geom_bar(position="fill") +
+  ggtitle("PAY_2")
+
+#stack bar graph PAY_3
+original_default %>% ggplot(aes(x=as.factor(PAY_3), fill= DEFAULT)) +
+  geom_bar() +
+  ggtitle("PAY_3")+
+  stat_count(aes(label = ..count..), geom = "label")
+
+graph_P3 <-original_default %>% ggplot(aes(x=as.factor(PAY_3), fill= DEFAULT)) +
+  geom_bar(position="fill") +
+  ggtitle("PAY_3")
+
+#stack bar graph PAY_4
+original_default %>% ggplot(aes(x=as.factor(PAY_4), fill= DEFAULT)) +
+  geom_bar() +
+  ggtitle("PAY_4")+
+  stat_count(aes(label = ..count..), geom = "label")
+
+graph_P4 <-original_default %>% ggplot(aes(x=as.factor(PAY_4), fill= DEFAULT)) +
+  geom_bar(position="fill") +
+  ggtitle("PAY_4")
+ 
+
+#stack bar graph PAY_5
+original_default %>% ggplot(aes(x=as.factor(PAY_5), fill= DEFAULT)) +
+  geom_bar() +
+  ggtitle("PAY_5")+
+  stat_count(aes(label = ..count..), geom = "label")
+
+graph_P5 <-original_default %>% ggplot(aes(x=as.factor(PAY_5), fill= DEFAULT)) +
+  geom_bar(position="fill") +
+  ggtitle("PAY_5")
+
+#stack bar graph PAY_6
+original_default %>% ggplot(aes(x=as.factor(PAY_6), fill= DEFAULT)) +
+  geom_bar() +
+  ggtitle("PAY_6")+
+  stat_count(aes(label = ..count..), geom = "label")
+
+graph_P6 <-original_default %>% ggplot(aes(x=as.factor(PAY_6), fill= DEFAULT)) +
+  geom_bar(position="fill") +
+  ggtitle("PAY_6")
+
+install.packages("gridExtra")
+library(gridExtra)
+
+grid.arrange(graph_P0, graph_P2, graph_P3, graph_P4, graph_P5, graph_P6, nrow=2, ncol=3)
+
+#7 BILL_AMT
+str(original_default$BILL_AMT1)
+b1 <- ggplot(data=original_default, aes(BILL_AMT1)) +geom_histogram()
+b2 <- ggplot(data=original_default, aes(BILL_AMT2)) +geom_histogram()
+b3 <- ggplot(data=original_default, aes(BILL_AMT3)) +geom_histogram()
+b4 <- ggplot(data=original_default, aes(BILL_AMT4)) +geom_histogram()
+b5 <- ggplot(data=original_default, aes(BILL_AMT5)) +geom_histogram()
+b6 <- ggplot(data=original_default, aes(BILL_AMT6)) +geom_histogram()
+
+grid.arrange(b1,b2,b3,b4,b5,b6, nrow=2, ncol=3)
+
+#7 pay amount 
+
+str(original_default$PAY_AMT1)
+p1 <- ggplot(data=original_default, aes(PAY_AMT1)) +geom_histogram()
+p2 <- ggplot(data=original_default, aes(PAY_AMT2)) +geom_histogram()
+p3 <- ggplot(data=original_default, aes(PAY_AMT3)) +geom_histogram()
+p4 <- ggplot(data=original_default, aes(PAY_AMT4)) +geom_histogram()
+p5 <- ggplot(data=original_default, aes(PAY_AMT5)) +geom_histogram()
+p6 <- ggplot(data=original_default, aes(PAY_AMT6)) +geom_histogram()
+
+grid.arrange(p1,p2,p3,p4,p5,p6, nrow=2, ncol=3)
+
+#correlation
+plot_correlation(original_default)
+# DEFAULT has relatively strong correlations in terms of PAY, and PAY_AMT 
+
+##################
+#data preparation
+##################
+
+#scaling
+original_default[,1:23] <- scale(original_default[,1:23])
+
+#train_set, test_set
+set.seed(2021, sample.kind = "Rounding")
+test_index <- createDataPartition(original_default$DEFAULT, p=0.2, list=F, times=1)
+test_set <- original_default[test_index,]
+train_set <- original_default[-test_index,]
+
+################################################################################
+
+####################
+#baseline prediction
+####################
+
+#all predicted as non_default
+base_pred <-factor(numeric(length(test_set$DEFAULT)),levels=c("0","1"))
+
+#confusion matrix
+confusionMatrix(base_pred, test_set$DEFAULT)
+base_roc <-roc(as.numeric(test_set$DEFAULT), as.numeric(base_pred))
+plot(base_roc, lty = 1, legacy.axes = TRUE)
+#AUC 0.5
+
+####################
+#logistic regression
+####################
+
+#logistic regression
+glm_mdl <- glm(
+               DEFAULT ~., 
+               data = train_set, 
+               family = binomial(link = "logit"),
+               )
+
+summary(glm_default)
+
+glm_prob <- predict(glm_mdl, test_set, type="response")
+ggplot(data=data.frame(glm_prob),aes(glm_prob))+ geom_histogram(bins = 50)
+
+glm_pred <- ifelse(glm_prob >0.5,1,0)
+
+confusionMatrix(as.factor(glm_pred), test_set$DEFAULT)
+
+
+###############
+#decision tree
+###############
+
+#rpart 
+#using default minsplit=20, cp=0.01
+
+set.seed(2021, sample.kind = "Rounding")
+
+rpart_mdl <-rpart(formula = DEFAULT ~ .,data = train_set)
+
+summary(rpart_mdl)
+
+plot(rpart_mdl,margin=0.1)
+text(rpart_mdl, cex=1)
+plotcp(rpart_mdl)
+
+rpart_pred <- predict(rpart_mdl, test_set, type="class")
+confusionMatrix(as.factor(rpart_pred), test_set$DEFAULT)
+#AUC 0.6486
+
+#tuning
+#using smaller cp and split ="information"
+rpart_tuned_mdl <- rpart(DEFAULT ~ .,
+                         data = train_set,
+                         method = 'class',
+                         parms = list(split='information'),
+                         control = rpart.control(cp=0.001))
+
+plot(rpart_tuned_mdl,margin=0.1)
+text(rpart_tuned_mdl, cex=0.75)
+printcp(rpart_tuned_mdl)
+plotcp(rpart_tuned_mdl)
+
+rpart_tuned_pred <- predict(rpart_tuned_mdl, test_set, type="class")
+confusionMatrix(as.factor(rpart_tuned_pred), test_set$DEFAULT)
+
+#cross validation
+rpart_cvmdl <- train(DEFAULT ~ ., 
+                     method = "rpart", 
+                     tuneGrid = data.frame(cp = seq(0, 0.05, len = 25)), 
+                     data = train_set)
+
+
+plot(rpart_cvmdl)
+rpart_cvmdl$bestTune
+
+plot(rpart_cvmdl$finalModel, margin=0.1)
+text(rpart_cvmdl$finalModel, cex=1)
+
+rpart_cvmdl_prob <- predict(rpart_cvmdl, test_set, type="prob")
+rpart_cvmdl_pred <- ifelse(rpart_cvmdl_prob[,1] >0.5,0,1)
+
+colAUC(rpart_cvmdl_prob,test_set$DEFAULT, plotROC = T)
+class(rpart_cvmdl_prob)
+
+confusionMatrix(as.factor(rpart_cvmdl_pred), test_set$DEFAULT)
+rpart_cvmdl_roc <-roc(as.numeric(test_set$default.payment.next.month), as.numeric(rpart_cvmdl_pred))
+plot(rpart_cvmdl_roc)
+
+##############
+#random forest
+##############
+set.seed(2021, sample.kind = "Rounding")
+
+#default ntree=500, mtry=sqrt(23)
+
+rf_mdl <- randomForest(
+  formula = DEFAULT ~ ., 
+  data = train_set)
+
+summary(rf_mdl)
+
+rf_pred <- predict(rf_mdl, test_set)
+confusionMatrix(as.factor(rf_pred), test_set$DEFAULT)
+
+plot(rf_mdl)
+
+#tuning random forest using nodesize, also using caret package
+#caution! it takes a lot of time!
+
+nodesize <- seq(1, 51, 10)
+acc <- sapply(nodesize, function(ns){
+  train(DEFAULT ~ ., 
+        method = "rf", 
+        data = train_set,
+        tuneGrid = data.frame(mtry = 2),
+        nodesize = ns)$results$Accuracy
+})
+qplot(nodesize, acc)
+
+rf_tuned_mdl <- randomForest(DEFAULT ~ ., 
+                             data= train_set,
+                             ntree=1000,
+                             nodesize = nodesize[which.max(acc)])
+
+rf_tuned_pred <-predict(rf_tuned_mdl, test_set)
+confusionMatrix(as.factor(rf_tuned_pred),test_set$DEFAULT) 
+
+rf_tuned_mdl$ntree
+  
+plot(rf_tuned_mdl)
+summary(rf_tuned_mdl)
+varImp(rf_tuned_mdl)
+###############################################################################
