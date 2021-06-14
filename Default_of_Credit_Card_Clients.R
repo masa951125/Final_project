@@ -8,6 +8,7 @@ library(rpart.plot)
 library(pROC)
 install.packages("caTools")
 library(caTools)
+library(randomForest)
 
 url <-"https://github.com/masa951125/Final_project/raw/main/UCI_Credit_Card.csv"
 download.file(url, "original_default.csv")
@@ -248,7 +249,7 @@ glm_mdl <- glm(
                family = binomial(link = "logit"),
                )
 
-summary(glm_default)
+summary(glm_mdl)
 
 glm_prob <- predict(glm_mdl, test_set, type="response")
 ggplot(data=data.frame(glm_prob),aes(glm_prob))+ geom_histogram(bins = 50)
@@ -256,7 +257,8 @@ ggplot(data=data.frame(glm_prob),aes(glm_prob))+ geom_histogram(bins = 50)
 glm_pred <- ifelse(glm_prob >0.5,1,0)
 
 confusionMatrix(as.factor(glm_pred), test_set$DEFAULT)
-
+#Accuracy : 0.8122  Sensitivity : 0.9741 
+#Specificity : 0.2425 Balanced Accuracy : 0.6083 
 
 ###############
 #decision tree
@@ -277,10 +279,17 @@ plotcp(rpart_mdl)
 
 rpart_pred <- predict(rpart_mdl, test_set, type="class")
 confusionMatrix(as.factor(rpart_pred), test_set$DEFAULT)
-#AUC 0.6486
+#Accuracy : 0.8229 
+#Sensitivity : 0.9613  
+#Specificity : 0.3358 
+#Balanced Accuracy : 0.6486
+
+rpart_mdl$variable.importance
+#this model illustrates that PAY_0 is overwhelmingly important.
 
 #tuning
 #using smaller cp and split ="information"
+
 rpart_tuned_mdl <- rpart(DEFAULT ~ .,
                          data = train_set,
                          method = 'class',
@@ -294,13 +303,21 @@ plotcp(rpart_tuned_mdl)
 
 rpart_tuned_pred <- predict(rpart_tuned_mdl, test_set, type="class")
 confusionMatrix(as.factor(rpart_tuned_pred), test_set$DEFAULT)
+#Accuracy : 0.8192 
+#Sensitivity : 0.9437 
+#Specificity : 0.3810 
+#Balanced Accuracy : 0.6624
+
+rpart_tuned_mdl %>% 
+  varImp() %>% 
+  ggplot(top = 20)
+
 
 #cross validation
 rpart_cvmdl <- train(DEFAULT ~ ., 
                      method = "rpart", 
                      tuneGrid = data.frame(cp = seq(0, 0.05, len = 25)), 
                      data = train_set)
-
 
 plot(rpart_cvmdl)
 rpart_cvmdl$bestTune
@@ -317,6 +334,10 @@ class(rpart_cvmdl_prob)
 confusionMatrix(as.factor(rpart_cvmdl_pred), test_set$DEFAULT)
 rpart_cvmdl_roc <-roc(as.numeric(test_set$default.payment.next.month), as.numeric(rpart_cvmdl_pred))
 plot(rpart_cvmdl_roc)
+
+rpart_cvmdl %>% 
+  varImp() %>% 
+  ggplot(top = 20)
 
 ##############
 #random forest
@@ -335,6 +356,10 @@ rf_pred <- predict(rf_mdl, test_set)
 confusionMatrix(as.factor(rf_pred), test_set$DEFAULT)
 
 plot(rf_mdl)
+
+rf_mdl %>% 
+  varImp() %>% 
+  ggplot(top = 20)
 
 #tuning random forest using nodesize, also using caret package
 #caution! it takes a lot of time!
@@ -361,5 +386,35 @@ rf_tuned_mdl$ntree
   
 plot(rf_tuned_mdl)
 summary(rf_tuned_mdl)
+
+
+#to improve further, what happens if we leave out features which are not improtant?
 varImp(rf_tuned_mdl)
+
+#from this, we will leave out 3 features, SEX, EDUCATION, MARRIAGE
+
+nodesize <- seq(1, 51, 10)
+new_acc <- sapply(nodesize, function(ns){
+  train(DEFAULT ~ ., 
+        method = "rf", 
+        data = train_set %>% select(-SEX, -EDUCATION, -MARRIAGE),
+        tuneGrid = data.frame(mtry = 2),
+        nodesize = ns)$results$Accuracy
+})
+
+new_rf_tuned_mdl <- randomForest(DEFAULT ~ ., 
+                             data= train_set %>% select(-SEX, -EDUCATION, -MARRIAGE),
+                             ntree=1000,
+                             nodesize = nodesize[which.max(acc)])
+
+
+new_rf_tuned_pred <-predict(new_rf_tuned_mdl, test_set)
+confusionMatrix(as.factor(new_rf_tuned_pred),test_set$DEFAULT) 
+#Accuracy : 0.824
+#Sensitivity : 0.9527
+#Specificity : 0.3712  
+#Balanced Accuracy : 0.6620   
+
+varImp(new_rf_tuned_mdl)
+
 ###############################################################################
