@@ -1,0 +1,40 @@
+[33m57caabe[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m)[m HEAD@{0}: reset: moving to HEAD^
+[33med56057[m HEAD@{1}: reset: moving to HEAD^
+[33m4d04e9a[m HEAD@{2}: reset: moving to HEAD^
+[33ma6bbe0c[m HEAD@{3}: reset: moving to HEAD^
+[33m2e3ea8e[m HEAD@{4}: commit: changed file
+[33ma6bbe0c[m HEAD@{5}: reset: moving to HEAD@{6}}
+[33mfda1b3a[m HEAD@{6}: commit: Is it OK?
+[33m4d04e9a[m HEAD@{7}: reset: moving to HEAD@{5}}
+[33m940b1d2[m HEAD@{8}: reset: moving to HEAD@{4}
+[33m48e5ad4[m HEAD@{9}: reset: moving to HEAD@{4}
+[33m4d04e9a[m HEAD@{10}: reset: moving to HEAD@{4}}
+[33m91c037a[m HEAD@{11}: commit (amend): changed files
+[33m29cc790[m[33m ([m[1;31morigin/main[m[33m)[m HEAD@{12}: reset: moving to HEAD^
+[33m940b1d2[m HEAD@{13}: reset: moving to HEAD^
+[33m48e5ad4[m HEAD@{14}: reset: moving to HEAD^
+[33me610e55[m HEAD@{15}: reset: moving to HEAD^
+[33me0ec799[m HEAD@{16}: commit: delete file
+[33me610e55[m HEAD@{17}: commit: channged file
+[33m48e5ad4[m HEAD@{18}: commit: changed file
+[33m940b1d2[m HEAD@{19}: commit: files changed
+[33m29cc790[m[33m ([m[1;31morigin/main[m[33m)[m HEAD@{20}: commit: changed files
+[33mba16636[m HEAD@{21}: commit: changed file
+[33m4adf312[m HEAD@{22}: commit: changed files
+[33mbc6d0b2[m HEAD@{23}: commit: changed
+[33m7ee46fc[m HEAD@{24}: commit: new files
+[33ma6bbe0c[m HEAD@{25}: commit: new files
+[33m4d04e9a[m HEAD@{26}: commit: new file
+[33med56057[m HEAD@{27}: commit: delete files
+[33m57caabe[m[33m ([m[1;36mHEAD -> [m[1;32mmain[m[33m)[m HEAD@{28}: commit: changed file
+[33m7ecb96e[m HEAD@{29}: commit: new file
+[33m700ca94[m HEAD@{30}: commit: main data
+[33m2e7606f[m HEAD@{31}: commit: delete
+[33m7f7a8fd[m HEAD@{32}: commit: new file
+[33md6bc660[m HEAD@{33}: commit: delete file
+[33m12f2ca0[m HEAD@{34}: commit: new files
+[33maaad1fe[m HEAD@{35}: commit: delete
+[33m50173dd[m HEAD@{36}: commit: sample
+[33mb7cbff4[m HEAD@{37}: commit: delete
+[33m241c3fe[m HEAD@{38}: Branch: renamed refs/heads/master to refs/heads/main
+[33m241c3fe[m HEAD@{40}: commit (initial): sample
