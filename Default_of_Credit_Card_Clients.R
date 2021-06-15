@@ -1,19 +1,25 @@
+
+if(!require(tidyverse)) install.packages("tidyverse")
+if(!require(caret)) install.packages("caret")
+if(!require(rpart)) install.packages("rpart")
+if(!require(rpart.plot)) install.packages("rpart.plot")
+if(!require(pROC)) install.packages("pROC")
+if(!require(caTools)) install.packages("caTools")
+if(!require(randomForest)) install.packages("randomForest")
+
+
 library(tidyverse)
 library(caret)
-#install.packages("DataExplorer")
-#library(DataExplorer)
 library(rpart)
-install.packages("rpart.plot")
 library(rpart.plot)
 library(pROC)
-install.packages("caTools")
 library(caTools)
 library(randomForest)
 
 url <-"https://github.com/masa951125/Final_project/raw/main/UCI_Credit_Card.csv"
 download.file(url, "original_default.csv")
 original_default <- read_csv("original_default.csv")
-
+introduce(original_default)
 
 ##################
 #Data exploration
@@ -261,6 +267,12 @@ confusionMatrix(as.factor(glm_pred), test_set$DEFAULT)
 #Accuracy : 0.8122  Sensitivity : 0.9741 
 #Specificity : 0.2425 Balanced Accuracy : 0.6083 
 
+glm_roc <- roc(as.numeric(test_set$DEFAULT),glm_pred)
+plot(glm_roc)
+glm_roc$auc
+#Area under the curve: 0.6083
+colAUC(rpart_cvmdl_prob,test_set$DEFAULT, plotROC = T)
+
 ###############
 #decision tree
 ###############
@@ -284,6 +296,9 @@ confusionMatrix(as.factor(rpart_pred), test_set$DEFAULT)
 #Sensitivity : 0.9613  
 #Specificity : 0.3358 
 #Balanced Accuracy : 0.6486
+
+rpart_roc <-roc(as.numeric(test_set$DEFAULT),as.numeric(rpart_pred))
+colAUC(as.numeric(rpart_pred), as.numeric(test_set$DEFAULT), plotROC = T)
 
 rpart_mdl$variable.importance
 #this model illustrates that PAY_0 is overwhelmingly important.
@@ -309,6 +324,9 @@ confusionMatrix(as.factor(rpart_tuned_pred), test_set$DEFAULT)
 #Specificity : 0.3810 
 #Balanced Accuracy : 0.6624
 
+rpart_tuned_roc <- roc(as.numeric(test_set$DEFAULT),as.numeric(rpart_tuned_pred))
+colAUC(as.numeric(rpart_tuned_pred),as.numeric(test_set$DEFAULT), plotROC = T)
+
 rpart_tuned_mdl %>% 
   varImp() %>% 
   ggplot(top = 20)
@@ -329,6 +347,7 @@ text(rpart_cvmdl$finalModel, cex=1)
 rpart_cvmdl_prob <- predict(rpart_cvmdl, test_set, type="prob")
 rpart_cvmdl_pred <- ifelse(rpart_cvmdl_prob[,1] >0.5,0,1)
 
+#AUC
 colAUC(rpart_cvmdl_prob,test_set$DEFAULT, plotROC = T)
 class(rpart_cvmdl_prob)
 
