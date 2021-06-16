@@ -65,6 +65,7 @@ summary(original_default$LIMIT_BAL)
 ggplot(data=original_default, aes(LIMIT_BAL),fill=DEFAULT) +geom_histogram()
 
 #2 SEX
+unique(original_default$SEX)
 
 gender <- ifelse(original_default$SEX == 1, "male", "female")
 
@@ -228,9 +229,10 @@ plot_correlation(original_default)
 ##################
 #data preparation
 ##################
-
 #scaling
 original_default[,1:23] <- scale(original_default[,1:23])
+
+str(original_default)  
 
 #train_set, test_set
 set.seed(2021, sample.kind = "Rounding")
@@ -272,8 +274,8 @@ glm_prob <- predict(glm_mdl, test_set,type="response")
 ggplot(data=data.frame(glm_prob),aes(glm_prob))+ geom_histogram(bins = 50)
 
 glm_pred <- ifelse(glm_prob >0.5,1,0)
-
-
+class(glm_pred)
+class(test_set$DEFAULT)
 confusionMatrix(as.factor(glm_pred), test_set$DEFAULT)
 # Accuracy : 0.8122  
 # Sensitivity : 0.9741 
