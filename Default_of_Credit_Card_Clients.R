@@ -1,25 +1,34 @@
+#package used in this code
 
 if(!require(tidyverse)) install.packages("tidyverse")
-if(!require(caret)) install.packages("caret")
-if(!require(rpart)) install.packages("rpart")
-if(!require(rpart.plot)) install.packages("rpart.plot")
-if(!require(pROC)) install.packages("pROC")
-if(!require(caTools)) install.packages("caTools")
-if(!require(randomForest)) install.packages("randomForest")
-
-
 library(tidyverse)
+
+if(!require(caret)) install.packages("caret")
 library(caret)
+
+if(!require(rpart)) install.packages("rpart")
 library(rpart)
+
+if(!require(rpart.plot)) install.packages("rpart.plot")
 library(rpart.plot)
+
+if(!require(pROC)) install.packages("pROC")
 library(pROC)
+
+if(!require(PRROC)) install.packages("PRROC")
+library(PRROC)
+
+if(!require(caTools)) install.packages("caTools")
 library(caTools)
+
+if(!require(randomForest)) install.packages("randomForest")
 library(randomForest)
 
+#data
 url <-"https://github.com/masa951125/Final_project/raw/main/UCI_Credit_Card.csv"
 download.file(url, "original_default.csv")
 original_default <- read_csv("original_default.csv")
-introduce(original_default)
+
 
 ##################
 #Data exploration
@@ -240,6 +249,11 @@ base_pred <-factor(numeric(length(test_set$DEFAULT)),levels=c("0","1"))
 
 #confusion matrix
 confusionMatrix(base_pred, test_set$DEFAULT)
+# Accuracy : 0.7787
+# Sensitivity : 1.0000         
+# Specificity : 0.0000   
+# Balanced Accuracy : 0.5000
+
 base_roc <-roc(as.numeric(test_set$DEFAULT), as.numeric(base_pred))
 plot(base_roc, lty = 1, legacy.axes = TRUE)
 #AUC 0.5
@@ -249,13 +263,10 @@ plot(base_roc, lty = 1, legacy.axes = TRUE)
 ####################
 
 #logistic regression
-glm_mdl <- glm(
-               DEFAULT ~., 
+glm_mdl <- glm(DEFAULT ~., 
                data = train_set, 
-               family = binomial(link = "logit"),
-               )
+               family = binomial(link = "logit"))
 
-summary(glm_mdl)
 
 glm_prob <- predict(glm_mdl, test_set,type="response")
 ggplot(data=data.frame(glm_prob),aes(glm_prob))+ geom_histogram(bins = 50)
@@ -264,47 +275,48 @@ glm_pred <- ifelse(glm_prob >0.5,1,0)
 
 
 confusionMatrix(as.factor(glm_pred), test_set$DEFAULT)
-#Accuracy : 0.8122  Sensitivity : 0.9741 
-#Specificity : 0.2425 Balanced Accuracy : 0.6083 
+# Accuracy : 0.8122  
+# Sensitivity : 0.9741 
+# Specificity : 0.2425 
+# Balanced Accuracy : 0.6083 
 
 glm_roc <- roc(as.numeric(test_set$DEFAULT),glm_pred)
 plot(glm_roc)
 glm_roc$auc
 #Area under the curve: 0.6083
-colAUC(rpart_cvmdl_prob,test_set$DEFAULT, plotROC = T)
 
 ###############
 #decision tree
 ###############
 
-#rpart 
-#using default minsplit=20, cp=0.01
+#rpart ~ using default minsplit=20, cp=0.01
 
 set.seed(2021, sample.kind = "Rounding")
 
 rpart_mdl <-rpart(formula = DEFAULT ~ .,data = train_set)
-
-summary(rpart_mdl)
-
-plot(rpart_mdl,margin=0.1)
-text(rpart_mdl, cex=1)
-plotcp(rpart_mdl)
-
 rpart_pred <- predict(rpart_mdl, test_set, type="class")
+
 confusionMatrix(as.factor(rpart_pred), test_set$DEFAULT)
 #Accuracy : 0.8229 
 #Sensitivity : 0.9613  
 #Specificity : 0.3358 
 #Balanced Accuracy : 0.6486
 
-rpart_roc <-roc(as.numeric(test_set$DEFAULT),as.numeric(rpart_pred))
-colAUC(as.numeric(rpart_pred), as.numeric(test_set$DEFAULT), plotROC = T)
+#draw decision tree
+plot(rpart_mdl,margin=0.1)
+text(rpart_mdl, cex=1)
 
+#AUC
+rpart_roc <-roc(as.numeric(test_set$DEFAULT),as.numeric(rpart_pred))
+plot(rpart_roc)
+rpart_roc$auc
+#Area under the curve: 0.6486
+
+#find used features
 rpart_mdl$variable.importance
 #this model illustrates that PAY_0 is overwhelmingly important.
 
-#tuning
-#using smaller cp and split ="information"
+#rpart ~tuning using smaller cp and split ="information"
 
 rpart_tuned_mdl <- rpart(DEFAULT ~ .,
                          data = train_set,
@@ -312,56 +324,71 @@ rpart_tuned_mdl <- rpart(DEFAULT ~ .,
                          parms = list(split='information'),
                          control = rpart.control(cp=0.001))
 
+#draw decision tree
 plot(rpart_tuned_mdl,margin=0.1)
 text(rpart_tuned_mdl, cex=0.75)
+
 printcp(rpart_tuned_mdl)
 plotcp(rpart_tuned_mdl)
 
 rpart_tuned_pred <- predict(rpart_tuned_mdl, test_set, type="class")
+
 confusionMatrix(as.factor(rpart_tuned_pred), test_set$DEFAULT)
 #Accuracy : 0.8192 
 #Sensitivity : 0.9437 
 #Specificity : 0.3810 
 #Balanced Accuracy : 0.6624
 
+#AUC
 rpart_tuned_roc <- roc(as.numeric(test_set$DEFAULT),as.numeric(rpart_tuned_pred))
-colAUC(as.numeric(rpart_tuned_pred),as.numeric(test_set$DEFAULT), plotROC = T)
+plot(rpart_tuned_roc)
+rpart_tuned_roc$auc
+#Area under the curve: 0.6624
 
+#important features
 rpart_tuned_mdl %>% 
-  varImp() %>% 
-  ggplot(top = 20)
+  varImp() 
 
-
-#cross validation
+#rpart ~ cross validation using caret
 rpart_cvmdl <- train(DEFAULT ~ ., 
                      method = "rpart", 
                      tuneGrid = data.frame(cp = seq(0, 0.05, len = 25)), 
                      data = train_set)
 
+#find optimal cp
 plot(rpart_cvmdl)
-rpart_cvmdl$bestTune
+cp_opt <- rpart_cvmdl$bestTune
 
-plot(rpart_cvmdl$finalModel, margin=0.1)
-text(rpart_cvmdl$finalModel, cex=1)
+#calculate again
+new_rpart_cvmdl <- train(DEFAULT ~ ., 
+                     method = "rpart", 
+                     tuneGrid = cp_opt, 
+                     data = train_set)
 
-rpart_cvmdl_prob <- predict(rpart_cvmdl, test_set, type="prob")
-rpart_cvmdl_pred <- ifelse(rpart_cvmdl_prob[,1] >0.5,0,1)
+plot(new_rpart_cvmdl$finalModel,margin=0.1)
+text(new_rpart_cvmdl$finalModel,cex=1)
+
+new_rpart_cvmdl_prob <- predict(new_rpart_cvmdl, test_set, type="prob")
+new_rpart_cvmdl_pred <- ifelse(new_rpart_cvmdl_prob[,1] >0.5,0,1)
+confusionMatrix(as.factor(new_rpart_cvmdl_pred), test_set$DEFAULT)
+# Accuracy : 0.8215
+# Sensitivity : 0.9636          
+# Specificity : 0.3215 
+# Balanced Accuracy : 0.6426
 
 #AUC
-colAUC(rpart_cvmdl_prob,test_set$DEFAULT, plotROC = T)
-class(rpart_cvmdl_prob)
-
-confusionMatrix(as.factor(rpart_cvmdl_pred), test_set$DEFAULT)
-rpart_cvmdl_roc <-roc(as.numeric(test_set$default.payment.next.month), as.numeric(rpart_cvmdl_pred))
-plot(rpart_cvmdl_roc)
+new_rpart_cvmdl_roc <-roc(as.numeric(test_set$DEFAULT), as.numeric(new_rpart_cvmdl_pred))
+plot(new_rpart_cvmdl_roc)
+new_rpart_cvmdl_roc$auc
+#Area under the curve: 0.6426
 
 rpart_cvmdl %>% 
-  varImp() %>% 
-  ggplot(top = 20)
+  varImp() 
 
 ##############
 #random forest
 ##############
+
 set.seed(2021, sample.kind = "Rounding")
 
 #default ntree=500, mtry=sqrt(23)
@@ -374,13 +401,21 @@ summary(rf_mdl)
 
 rf_pred <- predict(rf_mdl, test_set)
 confusionMatrix(as.factor(rf_pred), test_set$DEFAULT)
+# Accuracy : 0.8187
+# Sensitivity : 0.9495          
+# Specificity : 0.3584
+# Balanced Accuracy : 0.6540
 
 plot(rf_mdl)
 
-rf_mdl %>% 
-  varImp() %>% 
-  ggplot(top = 20)
+#AUC
+rf_roc <-roc(as.numeric(test_set$DEFAULT), as.numeric(rf_pred))
+rf_roc$auc
+#Area under the curve: 0.654
 
+rf_mdl %>% 
+  varImp() 
+  
 #tuning random forest using nodesize, also using caret package
 #caution! it takes a lot of time!
 
@@ -401,14 +436,22 @@ rf_tuned_mdl <- randomForest(DEFAULT ~ .,
 
 rf_tuned_pred <-predict(rf_tuned_mdl, test_set)
 confusionMatrix(as.factor(rf_tuned_pred),test_set$DEFAULT) 
+#Accuracy : 0.824
+#Sensitivity : 0.9531          
+#Specificity : 0.3697
+#Balanced Accuracy : 0.6614
 
 rf_tuned_mdl$ntree
   
 plot(rf_tuned_mdl)
 summary(rf_tuned_mdl)
 
+#AUC
+rf_tuned_roc <-roc(as.numeric(test_set$DEFAULT), as.numeric(rf_tuned_pred))
+rf_tuned_roc$auc
+#Area under the curve: 0.6614
 
-#to improve further, what happens if we leave out features which are not improtant?
+#to improve further, what happens if we leave out features which are not important?
 varImp(rf_tuned_mdl)
 
 #from this, we will leave out 3 features, SEX, EDUCATION, MARRIAGE
@@ -435,6 +478,11 @@ confusionMatrix(as.factor(new_rf_tuned_pred),test_set$DEFAULT)
 #Specificity : 0.3712  
 #Balanced Accuracy : 0.6620   
 
+#AUC
+new_rf_tuned_roc <-roc(as.numeric(test_set$DEFAULT), as.numeric(new_rf_tuned_pred))
+new_rf_tuned_roc$auc
+#Area under the curve: 0.662
+
 varImp(new_rf_tuned_mdl)
 
 #ensemble
@@ -447,5 +495,8 @@ confusionMatrix(as.factor(ensemble_preds),test_set$DEFAULT)
 #Specificity : 0.3622  
 #Balanced Accuracy : 0.6588
 
-
+#AUC
+ensemble_roc <-roc(as.numeric(test_set$DEFAULT), as.numeric(ensemble_preds))
+ensemble_roc$auc
+#Area under the curve: 0.6588
 ###############################################################################
