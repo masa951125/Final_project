@@ -18,6 +18,9 @@ library(pROC)
 if(!require(PRROC)) install.packages("PRROC")
 library(PRROC)
 
+if(!require(DataExplorer)) install.packages("DataExplorer")
+library(DataExplorer)
+
 if(!require(caTools)) install.packages("caTools")
 library(caTools)
 
@@ -39,8 +42,6 @@ str(original_default)
 summary(original_default)
 #no NAs
 
-#remove ID
-original_default <- original_default %>% select(-ID)
 
 #change name of "default.payment.next.month"
 n <-which(names(original_default)=="default.payment.next.month")
@@ -229,10 +230,36 @@ plot_correlation(original_default)
 ##################
 #data preparation
 ##################
-#scaling
-original_default[,1:23] <- scale(original_default[,1:23])
 
-str(original_default)  
+#remove ID
+original_default <- original_default %>% select(-ID)
+
+#categorical data
+#SEX,EDUCATION,MARRIAGE, PAY_0~PAY_6  are categorical data
+
+original_default <- original_default %>%
+  mutate(SEX = as.factor(SEX),
+         EDUCATION = as.factor(EDUCATION),
+         MARRIAGE = as.factor(MARRIAGE),
+         PAY_0 = as.factor(PAY_0),
+         PAY_2 = as.factor(PAY_2),
+         PAY_3 = as.factor(PAY_3),
+         PAY_4 = as.factor(PAY_4),
+         PAY_5 = as.factor(PAY_5),
+         PAY_6 = as.factor(PAY_6) )
+
+str(original_default)
+
+names(original_default)
+
+#scaling
+cat_col <- c("SEX", "EDUCATION", "MARRIAGE",
+             "PAY_0", "PAY_2", "PAY_3", "PAY_4", "PAY_5", "PAY_6", "DEFAULT")
+all_col <- names(original_default)
+num_col <- all_col[-which(all_col %in% cat_col)]
+
+original_default[num_col] <-original_default %>% select(-cat_col) %>% scale()
+str(original_default)
 
 #train_set, test_set
 set.seed(2021, sample.kind = "Rounding")
@@ -265,7 +292,9 @@ plot(base_roc, lty = 1, legacy.axes = TRUE)
 ####################
 
 #logistic regression
-glm_mdl <- glm(DEFAULT ~., 
+#pick up features, SEX, EDUCATION, MARRIAGE, AGE, PAY_0, BILL_AMT1, and PAY_AMT1
+glm_mdl <- glm(DEFAULT ~ SEX + EDUCATION + MARRIAGE + AGE + 
+               PAY_0 +BILL_AMT1 +PAY_AMT1, 
                data = train_set, 
                family = binomial(link = "logit"))
 
@@ -274,18 +303,18 @@ glm_prob <- predict(glm_mdl, test_set,type="response")
 ggplot(data=data.frame(glm_prob),aes(glm_prob))+ geom_histogram(bins = 50)
 
 glm_pred <- ifelse(glm_prob >0.5,1,0)
-class(glm_pred)
+summary(glm_mdl)
 class(test_set$DEFAULT)
 confusionMatrix(as.factor(glm_pred), test_set$DEFAULT)
-# Accuracy : 0.8122  
-# Sensitivity : 0.9741 
-# Specificity : 0.2425 
-# Balanced Accuracy : 0.6083 
+#Accuracy : 0.8229
+#Sensitivity : 0.9634         
+#Specificity : 0.3283
+#Balanced Accuracy : 0.6459
 
 glm_roc <- roc(as.numeric(test_set$DEFAULT),glm_pred)
 plot(glm_roc)
 glm_roc$auc
-#Area under the curve: 0.6083
+#Area under the curve: 0.6459
 
 ###############
 #decision tree
@@ -336,16 +365,16 @@ plotcp(rpart_tuned_mdl)
 rpart_tuned_pred <- predict(rpart_tuned_mdl, test_set, type="class")
 
 confusionMatrix(as.factor(rpart_tuned_pred), test_set$DEFAULT)
-#Accuracy : 0.8192 
-#Sensitivity : 0.9437 
-#Specificity : 0.3810 
-#Balanced Accuracy : 0.6624
+#Accuracy : 0.8192 0.8239
+#Sensitivity : 0.9437 0.9542
+#Specificity : 0.3810 0.3652 
+#Balanced Accuracy : 0.6624 0.6597 
 
 #AUC
 rpart_tuned_roc <- roc(as.numeric(test_set$DEFAULT),as.numeric(rpart_tuned_pred))
 plot(rpart_tuned_roc)
 rpart_tuned_roc$auc
-#Area under the curve: 0.6624
+#Area under the curve: 0.6624 0.6597
 
 #important features
 rpart_tuned_mdl %>% 
@@ -368,21 +397,21 @@ new_rpart_cvmdl <- train(DEFAULT ~ .,
                      data = train_set)
 
 plot(new_rpart_cvmdl$finalModel,margin=0.1)
-text(new_rpart_cvmdl$finalModel,cex=1)
+text(new_rpart_cvmdl$finalModel,cex=0.5)
 
 new_rpart_cvmdl_prob <- predict(new_rpart_cvmdl, test_set, type="prob")
 new_rpart_cvmdl_pred <- ifelse(new_rpart_cvmdl_prob[,1] >0.5,0,1)
 confusionMatrix(as.factor(new_rpart_cvmdl_pred), test_set$DEFAULT)
-# Accuracy : 0.8215
-# Sensitivity : 0.9636          
-# Specificity : 0.3215 
-# Balanced Accuracy : 0.6426
+# Accuracy : 0.8215 0.8194
+# Sensitivity : 0.9636 0.9628          
+# Specificity : 0.3215 0.3148  
+# Balanced Accuracy : 0.6426 0.6388
 
 #AUC
 new_rpart_cvmdl_roc <-roc(as.numeric(test_set$DEFAULT), as.numeric(new_rpart_cvmdl_pred))
 plot(new_rpart_cvmdl_roc)
 new_rpart_cvmdl_roc$auc
-#Area under the curve: 0.6426
+#Area under the curve: 0.6426 0.6388
 
 rpart_cvmdl %>% 
   varImp() 
@@ -403,17 +432,17 @@ summary(rf_mdl)
 
 rf_pred <- predict(rf_mdl, test_set)
 confusionMatrix(as.factor(rf_pred), test_set$DEFAULT)
-# Accuracy : 0.8187
-# Sensitivity : 0.9495          
-# Specificity : 0.3584
-# Balanced Accuracy : 0.6540
+# Accuracy : 0.8187 0.8185
+# Sensitivity : 0.9495 0.9489           
+# Specificity : 0.3584 0.3599
+# Balanced Accuracy : 0.6540 0.6544
 
 plot(rf_mdl)
 
 #AUC
 rf_roc <-roc(as.numeric(test_set$DEFAULT), as.numeric(rf_pred))
 rf_roc$auc
-#Area under the curve: 0.654
+#Area under the curve: 0.654 0.6544
 
 rf_mdl %>% 
   varImp() 
@@ -438,10 +467,10 @@ rf_tuned_mdl <- randomForest(DEFAULT ~ .,
 
 rf_tuned_pred <-predict(rf_tuned_mdl, test_set)
 confusionMatrix(as.factor(rf_tuned_pred),test_set$DEFAULT) 
-#Accuracy : 0.824
-#Sensitivity : 0.9531          
-#Specificity : 0.3697
-#Balanced Accuracy : 0.6614
+#Accuracy : 0.824 0.823
+#Sensitivity : 0.9531 0.9533        
+#Specificity : 0.3697 0.3645 
+#Balanced Accuracy : 0.6614 0.6589
 
 rf_tuned_mdl$ntree
   
@@ -451,21 +480,21 @@ summary(rf_tuned_mdl)
 #AUC
 rf_tuned_roc <-roc(as.numeric(test_set$DEFAULT), as.numeric(rf_tuned_pred))
 rf_tuned_roc$auc
-#Area under the curve: 0.6614
+#Area under the curve: 0.6614 0.6589
 
 #to improve further, what happens if we leave out features which are not important?
 varImp(rf_tuned_mdl)
 
 #from this, we will leave out 3 features, SEX, EDUCATION, MARRIAGE
 
-nodesize <- seq(1, 51, 10)
-new_acc <- sapply(nodesize, function(ns){
-  train(DEFAULT ~ ., 
-        method = "rf", 
-        data = train_set %>% select(-SEX, -EDUCATION, -MARRIAGE),
-        tuneGrid = data.frame(mtry = 2),
-        nodesize = ns)$results$Accuracy
-})
+#nodesize <- seq(1, 51, 10)
+#new_acc <- sapply(nodesize, function(ns){
+#  train(DEFAULT ~ ., 
+#        method = "rf", 
+#        data = train_set %>% select(-SEX, -EDUCATION, -MARRIAGE),
+#        tuneGrid = data.frame(mtry = 2),
+#        nodesize = ns)$results$Accuracy
+#})
 
 new_rf_tuned_mdl <- randomForest(DEFAULT ~ ., 
                              data= train_set %>% select(-SEX, -EDUCATION, -MARRIAGE),
@@ -475,15 +504,15 @@ new_rf_tuned_mdl <- randomForest(DEFAULT ~ .,
 
 new_rf_tuned_pred <-predict(new_rf_tuned_mdl, test_set)
 confusionMatrix(as.factor(new_rf_tuned_pred),test_set$DEFAULT) 
-#Accuracy : 0.824
-#Sensitivity : 0.9527
-#Specificity : 0.3712  
-#Balanced Accuracy : 0.6620   
+#Accuracy : 0.824 0.8232   
+#Sensitivity : 0.9527 0.9519       
+#Specificity : 0.3712 0.3705       
+#Balanced Accuracy : 0.6620  0.6612        
 
 #AUC
 new_rf_tuned_roc <-roc(as.numeric(test_set$DEFAULT), as.numeric(new_rf_tuned_pred))
 new_rf_tuned_roc$auc
-#Area under the curve: 0.662
+#Area under the curve: 0.662 0.6612 
 
 varImp(new_rf_tuned_mdl)
 
@@ -492,13 +521,13 @@ ensemble <-
   cbind(rf =new_rf_tuned_pred,rpart = rpart_tuned_pred,glm= as.factor(glm_pred))
 ensemble_preds <- ifelse(rowMeans(ensemble) > 1.5, 1, 0)
 confusionMatrix(as.factor(ensemble_preds),test_set$DEFAULT)
-#Accuracy : 0.8242
-#Sensitivity : 0.9555
-#Specificity : 0.3622  
-#Balanced Accuracy : 0.6588
+#Accuracy : 0.8242 0.8247 
+#Sensitivity : 0.9555 0.9585
+#Specificity : 0.3622 0.3539 
+#Balanced Accuracy : 0.6588 0.6562   
 
 #AUC
 ensemble_roc <-roc(as.numeric(test_set$DEFAULT), as.numeric(ensemble_preds))
 ensemble_roc$auc
-#Area under the curve: 0.6588
+#Area under the curve: 0.6588 0.6562   
 ###############################################################################
