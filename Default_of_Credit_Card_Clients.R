@@ -1,4 +1,7 @@
+###########################
 #package used in this code
+###########################
+#tidyverse, gridExtra, caret, rpart, pROC, DataExplorer, randomForest
 
 if(!require(tidyverse)) install.packages("tidyverse") #basic library
 library(tidyverse)
@@ -12,33 +15,27 @@ library(caret)
 if(!require(rpart)) install.packages("rpart") #to make decision tree model
 library(rpart)
 
-#if(!require(rpart.plot)) install.packages("rpart.plot") #to show decision tree
-#library(rpart.plot)
-
 if(!require(pROC)) install.packages("pROC")#ROC value and graph
 library(pROC)
-
-#if(!require(PRROC)) install.packages("PRROC") #ROC graph
-#library(PRROC)
 
 if(!require(DataExplorer)) install.packages("DataExplorer") #to do data exploration
 library(DataExplorer)
 
-#if(!require(caTools)) install.packages("caTools")
-#library(caTools)
-
 if(!require(randomForest)) install.packages("randomForest") #random forest
 library(randomForest)
 
+######
 #data
+######
+#data is stored in my GitHub repository. We will use the direct link.
+
 url <-"https://github.com/masa951125/Final_project/raw/main/UCI_Credit_Card.csv"
 download.file(url, "original_default.csv")
 original_default <- read_csv("original_default.csv")
 
-###############################################################################
-##################
-#Data exploration
-##################
+################################################################################
+#data exploration and cleansing
+################################################################################
 
 #check dataset
 str(original_default)
@@ -54,37 +51,55 @@ plot_correlation(original_default)
 n <-which(names(original_default)=="default.payment.next.month")
 names(original_default)[n] <- "DEFAULT"
 
-###############################
-#data exploration and cleansing
-###############################
 
+####################
 #outcomes ~ DEFAULT
-#change it into factor
+####################
 
+###########
+#1 outcome
+###########
+
+summary(original_default$DEFAULT)
+#the data explanation says;
+#https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset
+#0:non-default, 1:default
+
+#change outcomes into factor
 original_default$DEFAULT <- as.factor(original_default$DEFAULT)
+
+#show proportion of 0,1
+prop.table(table(original_default$DEFAULT))
+#0      1 
+#0.7788 0.2212 
+
 ggplot(data=original_default, aes(DEFAULT)) +geom_bar()
 
-mean(original_default$DEFAULT==1)
-#[1] 0.2212
-
-#1 LIMIT_BAL
+#############
+#2 LIMIT_BAL
+#############
 
 summary(original_default$LIMIT_BAL)
+#numeric data
+
 ggplot(data=original_default, aes(LIMIT_BAL),fill=DEFAULT) +geom_histogram()
 #distribution is skewed right
 
-median(original_default$LIMIT_BAL)
-mean(original_default$LIMIT_BAL)
-sd(original_default$LIMIT_BAL)
-
+#######
 #2 SEX
-unique(original_default$SEX)
+#######
 
+summary(original_default$SEX)
+unique(original_default$SEX)
+#categorical data
+
+#to make a plot, introducing new character vector
 gender <- ifelse(original_default$SEX == 1, "male", "female")
 
 original_default %>% ggplot(aes(x=gender, fill= DEFAULT)) +
   geom_bar() +
-  ggtitle("SEX")
+  ggtitle("SEX")+
+  stat_count(aes(label = ..count..), geom = "label")# illustrate numbers
 
 #stacked bar graph
 original_default %>% ggplot(aes(x=gender, fill= DEFAULT)) +
@@ -92,9 +107,16 @@ original_default %>% ggplot(aes(x=gender, fill= DEFAULT)) +
   ggtitle("SEX")
 #There seemed to be little difference between genders.
 
+#############
 #3 EDUCATION
+#############
 
+summary(original_default$EDUCATION)
 unique(original_default$EDUCATION)
+#categorical data
+
+#the data explanation says;
+#https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset
 #1=graduate school, 2=university, 3=high school, 4=others, 5=unknown, 6=unknown
 #[1] 2 1 3 5 4 6 0
 #O is not defined. 0,5 and 6 can be included into 4 
@@ -116,9 +138,16 @@ original_default %>% ggplot(aes(x=as.factor(EDUCATION), fill= DEFAULT)) +
   
 # 4 is the smallest in terms of default rate. but its numbers are very small.
 
+############
 #4 marriage
+############
 
+summary(original_default$ MARRIAGE)
 unique(original_default$ MARRIAGE)
+#categorical data
+
+#the data explanation says;
+#https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset
 #MARRIAGE: Marital status (1=married, 2=single, 3=others)
 #[1] 1 2 3 0
 #O is not defined. 0 can be included in 3 
@@ -129,7 +158,7 @@ original_default$MARRIAGE <- ifelse(original_default$MARRIAGE== 0, 3,
 original_default %>% ggplot(aes(x=as.factor(MARRIAGE), fill= DEFAULT)) +
   geom_bar() +
   ggtitle("MARRIAGE")+
- stat_count(aes(label = ..count..), geom = "label")# illustrate numbers
+  stat_count(aes(label = ..count..), geom = "label")# illustrate numbers
 
 #stack bar graph
 original_default %>% ggplot(aes(x=as.factor(MARRIAGE), fill= DEFAULT)) +
@@ -138,16 +167,29 @@ original_default %>% ggplot(aes(x=as.factor(MARRIAGE), fill= DEFAULT)) +
 
 # There seems to be little difference among the groups.
 
+#######
 #5 AGE
+#######
 
 summary(original_default$AGE)
+#numeric data
+
 ggplot(data=original_default, aes(AGE)) +geom_histogram()
 
+#######
 #6 PAY
+#######
 
 #PAY_0
 summary(original_default$PAY_0)
 unique(original_default$PAY_0)
+#categorical data
+
+#the data explanation says;
+#https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset
+#Repayment status in September, 2005 (-1=pay duly, 1=payment delay for one month, 
+#2=payment delay for two months, … 8=payment delay for eight months, 
+#9=payment delay for nine months and above)
 
 original_default %>% ggplot(aes(x=as.factor(PAY_0), fill= DEFAULT)) +
   geom_bar() +
@@ -159,10 +201,11 @@ graph_P0 <-original_default %>% ggplot(aes(x=as.factor(PAY_0), fill= DEFAULT)) +
   geom_bar(position="fill") +
   ggtitle("PAY_0")
 
+#PAY_2 ~ PAY_6 's structures are almost as same as PAY_0
 #PAY_2
 original_default %>% ggplot(aes(x=as.factor(PAY_2), fill= DEFAULT)) +
   geom_bar() +
-  ggtitle("PAY_2")+
+  ggtitle("PAY_2P")+
   stat_count(aes(label = ..count..), geom = "label")
 
 graph_P2 <-original_default %>% ggplot(aes(x=as.factor(PAY_2), fill= DEFAULT)) +
@@ -210,12 +253,21 @@ graph_P6 <-original_default %>% ggplot(aes(x=as.factor(PAY_6), fill= DEFAULT)) +
   geom_bar(position="fill") +
   ggtitle("PAY_6")
 
-install.packages("gridExtra")
-library(gridExtra)
-
 grid.arrange(graph_P0, graph_P2, graph_P3, graph_P4, graph_P5, graph_P6, nrow=2, ncol=3)
 
+############
 #7 BILL_AMT
+############
+
+summary(original_default$BILL_AMT1)
+#numerical data
+
+#the data explanation says;
+#https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset
+#Amount of bill statement in September, 2005 (NT dollar)
+
+#BILL_AMT1 ~ BILL_AMT6 's structures are almost the same
+
 str(original_default$BILL_AMT1)
 mean(original_default$BILL_AMT6)
 sd(original_default$BILL_AMT6)
@@ -230,7 +282,16 @@ b6 <- ggplot(data=original_default, aes(BILL_AMT6)) +geom_histogram()
 grid.arrange(b1,b2,b3,b4,b5,b6, nrow=2, ncol=3)
 #they show almost similar distribution
 
+##############
 #7 pay amount 
+##############
+
+summary(original_default$PAY_AMT1)
+#numerical data
+
+#the data explanation says;
+#https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset
+#Amount of previous payment in September, 2005 (NT dollar)
 
 str(original_default$PAY_AMT1)
 p1 <- ggplot(data=original_default, aes(PAY_AMT1)) +geom_histogram()
@@ -250,9 +311,8 @@ grid.arrange(p1,p2,p3,p4,p5,p6, nrow=2, ncol=3)
 #remove ID
 original_default <- original_default %>% select(-ID)
 
-#categorical data
+#categorical data, change numeric to factor
 #SEX,EDUCATION,MARRIAGE, PAY_0~PAY_6  are categorical data
-
 original_default <- original_default %>%
   mutate(SEX = as.factor(SEX),
          EDUCATION = as.factor(EDUCATION),
@@ -264,25 +324,32 @@ original_default <- original_default %>%
          PAY_5 = as.factor(PAY_5),
          PAY_6 = as.factor(PAY_6) )
 
-str(original_default)
-
-names(original_default)
-
 #scaling
+
+#categorical data columns 
 cat_col <- c("SEX", "EDUCATION", "MARRIAGE",
              "PAY_0", "PAY_2", "PAY_3", "PAY_4", "PAY_5", "PAY_6", "DEFAULT")
+#all columns
 all_col <- names(original_default)
+
+#numerical data columns
 num_col <- all_col[-which(all_col %in% cat_col)]
 
+#scaling numerical data
 original_default[num_col] <-original_default %>% select(-all_of(cat_col)) %>% scale()
 str(original_default)
 
-#train_set, test_set
+###################################
+#spliting into train_set, test_set
+###################################
+
 set.seed(2021, sample.kind = "Rounding")
 test_index <- createDataPartition(original_default$DEFAULT, p=0.2, list=F, times=1)
 test_set <- original_default[test_index,]
 train_set <- original_default[-test_index,]
 
+################################################################################
+#model analysis
 ################################################################################
 
 ####################
@@ -299,32 +366,37 @@ confusionMatrix(base_pred, test_set$DEFAULT)
 # Specificity : 0.0000   
 # Balanced Accuracy : 0.5000
 
+#we need to find models which exceed these values(except sensitivity)
+#roc curve and auc explanation
 
-#####################
-#logistic regression
-#####################
+################################################################################
 
-#pick up features, SEX, EDUCATION, MARRIAGE, AGE, PAY_0~PAY_6, BILL_AMT1, and PAY_AMT1
+######################################
+#logistic regression fewer predictors
+######################################
+
+#as this is a classification, we use logistic regression
+
+#pick up features, SEX, EDUCATION, MARRIAGE, AGE, PAY_0, BILL_AMT1, and PAY_AMT1
 glm_mdl <- glm(DEFAULT ~ SEX + EDUCATION + MARRIAGE + AGE + 
                  PAY_0 +BILL_AMT1 +PAY_AMT1, 
                data = train_set, 
                family = binomial(link = "logit"))
-
 
 glm_prob <- predict(glm_mdl, test_set,type="response")
 glm_pred <- ifelse(glm_prob >0.5,1,0)
 
 summary(glm_mdl)
 confusionMatrix(as.factor(glm_pred), test_set$DEFAULT)
-#Accuracy : 0.823
-#Sensitivity : 0.9636         
+#Accuracy : 0.8229
+#Sensitivity : 0.9634         
 #Specificity : 0.3283
-#Balanced Accuracy : 0.6460
+#Balanced Accuracy : 0.6459
 
 glm_roc <- roc(test_set$DEFAULT,glm_prob)
 plot(glm_roc, col="red")
 glm_roc$auc
-#Area under the curve: 0.7483
+#Area under the curve: 0.7488
 
 #make a table
 results <- tibble(method = "glm fewer predictors", 
@@ -334,14 +406,17 @@ results <- tibble(method = "glm fewer predictors",
                   AUC =as.numeric(glm_roc$auc))
 results %>% knitr::kable()
 
-
+#####################################################
 #stepwise regression using both forward and backward
+#####################################################
+
+#stepwise regression explanation
 
 #a null model with no predictors
-null_model <- glm(DEFAULT~1, data = train_set, family = "binomial")
+null_model <- glm(DEFAULT~1, data = train_set, family = binomial(link = "logit"))
 
 #q full model using all of the potential predictors
-full_model <- glm(DEFAULT~., data = train_set, family = "binomial")
+full_model <- glm(DEFAULT~., data = train_set, family = binomial(link = "logit"))
 
 #forward stepwise algorithm
 step_mdl_f   <- step(null_model, 
@@ -352,15 +427,15 @@ step_prob_f <- predict(step_mdl_f, test_set,type="response")
 step_pred_f <- ifelse(step_prob_f >0.5,1,0)
 confusionMatrix(as.factor(step_pred_f), test_set$DEFAULT)
 #Accuracy : 0.825
-#Sensitivity : 0.9574
-#Specificity : 0.3592
-#Balanced Accuracy : 0.6583
+#Sensitivity : 0.9572
+#Specificity : 0.3599
+#Balanced Accuracy : 0.6586
 
 #ROC
 step_roc_f <- roc(test_set$DEFAULT, step_prob_f)
 plot(step_roc_f, col = "red")
 step_roc_f$auc
-#Area under the curve: 0.7729
+#Area under the curve: 0.7734
 
 #backward
 step_mdl_b   <- step(full_model, 
@@ -369,17 +444,18 @@ step_mdl_b   <- step(full_model,
 
 step_prob_b <- predict(step_mdl_b, test_set,type="response")
 step_pred_b <- ifelse(step_prob_b >0.5,1,0)
+
 confusionMatrix(as.factor(step_pred_b), test_set$DEFAULT)
 #Accuracy : 0.825
-#Sensitivity : 0.9574
-#Specificity : 0.3592
-#Balanced Accuracy : 0.6583
+#Sensitivity : 0.9572
+#Specificity : 0.3599
+#Balanced Accuracy : 0.6586
 
 #ROC
 step_roc_b <- roc(test_set$DEFAULT,step_prob_b)
 plot(step_roc_b, col = "red")
 step_roc_b$auc
-#Area under the curve: 0.7729
+#Area under the curve: 0.7734
 
 summary(step_mdl_b)
 summary(step_mdl_f)
@@ -402,17 +478,17 @@ results <- bind_rows(
 
 results %>% knitr::kable()
 
+################################################################################
 
-
-###############
-#decision tree
-###############
+#######################
+#decision tree default
+#######################
 
 #rpart ~ using default minsplit=20, cp=0.01
 
 set.seed(2021, sample.kind = "Rounding")
-
 rpart_mdl <-rpart(formula = DEFAULT ~ .,data = train_set)
+
 rpart_pred <- predict(rpart_mdl, test_set, type="class")
 rpart_prob <- predict(rpart_mdl, test_set)
 
@@ -448,8 +524,13 @@ results <- bind_rows(
 
 results %>% knitr::kable()
 
-#rpart ~ cross validation using caret
+#################################
+#decision tree cross validataion
+#################################
 
+#rpart ~ cross validation using caret finding optimal cp value
+
+set.seed(2021, sample.kind = "Rounding")
 rpart_cv_mdl <- train(DEFAULT ~ ., 
                      method = "rpart", 
                      tuneGrid = data.frame(cp = seq(0, 0.05, len = 25)), 
@@ -459,7 +540,7 @@ rpart_cv_mdl <- train(DEFAULT ~ .,
 plot(rpart_cv_mdl)
 cp_opt <- rpart_cv_mdl$bestTune
 cp_opt
-#0.002083333
+# 0.00625
 
 #calculate again
 rpart_cv_mdl <- train(DEFAULT ~ ., 
@@ -473,22 +554,23 @@ text(rpart_cv_mdl$finalModel,cex=0.5)
 
 rpart_cv_mdl_prob <- predict(rpart_cv_mdl, test_set, type="prob")
 rpart_cv_mdl_pred <- ifelse(rpart_cv_mdl_prob[,1] >0.5,0,1)
+
 confusionMatrix(as.factor(rpart_cv_mdl_pred), test_set$DEFAULT)
-# Accuracy : 0.8194
-# Sensitivity : 0.9628         
-# Specificity : 0.3148  
-# Balanced Accuracy : 0.6388
+# Accuracy : 0.8212
+# Sensitivity : 0.9643         
+# Specificity : 0.3178 
+# Balanced Accuracy : 0.6410
 
 #AUC
 rpart_cv_mdl_roc <-roc(as.numeric(test_set$DEFAULT), as.numeric(rpart_cv_mdl_prob[,2]))
 plot(rpart_cv_mdl_roc, col="red")
 rpart_cv_mdl_roc$auc
-#Area under the curve: 0.7261
+#Area under the curve: 0.6882
 
 #pick up important predictors
-rpart_cvmdl %>% 
+rpart_cv_mdl %>% 
   varImp() 
-#PAY_0 ~ PAY_6, PAY_AMT1,2,3,5, BILL_AMT1,3
+#PAY_0 ~ PAY_6, PAY_AMT1,5,6
 
 #make a table
 results <- bind_rows(
@@ -501,8 +583,13 @@ results <- bind_rows(
 
 results %>% knitr::kable()
 
+##########################
+#decision tree smaller cp
+##########################
+
 #rpart ~tuning using smaller cp and split ="information"
 
+set.seed(2021, sample.kind = "Rounding")
 rpart_tuned_mdl <- rpart(DEFAULT ~ .,
                          data = train_set,
                          method = 'class',
@@ -531,6 +618,7 @@ rpart_tuned_roc$auc
 #important features
 rpart_tuned_mdl %>% 
   varImp() 
+#except EDUCAION, MARRIAGE, PAY_AMT5 are used. PAY_0~5 have importance
 
 #make a table
 results <- bind_rows(
@@ -543,37 +631,32 @@ results <- bind_rows(
 
 results %>% knitr::kable()
 
-##############
-#random forest
-##############
+################################################################################
+
+#######################
+#random forest default
+#######################
 
 set.seed(2021, sample.kind = "Rounding")
-
 rf_mdl <- randomForest(
   formula = DEFAULT ~ ., 
   data = train_set)
 
-summary(rf_mdl)
-
 rf_pred <- predict(rf_mdl, test_set)
 rf_prob <- predict(rf_mdl, test_set, type = "prob")
-confusionMatrix(as.factor(rf_pred), test_set$DEFAULT)
-# Accuracy : 0.8195
-# Sensitivity : 0.9489           
-# Specificity : 0.3645   
-# Balanced Accuracy : 0.6567
 
-plot(rf_mdl)
-rf_mdl$mtry
-#4
-rf_mdl$ntree
-#500
+confusionMatrix(as.factor(rf_pred), test_set$DEFAULT)
+# Accuracy : 0.8185
+# Sensitivity : 0.9489           
+# Specificity : 0.3599   
+# Balanced Accuracy : 0.6544
+
 
 #AUC
 rf_roc <-roc(as.numeric(test_set$DEFAULT), as.numeric(rf_prob[,2]))
 plot(rf_roc, col="red")
 rf_roc$auc
-#Area under the curve: 0.7725
+#Area under the curve: 0.7707
 
 rf_mdl %>% 
   varImp() 
@@ -590,9 +673,69 @@ results <- bind_rows(
 
 results %>% knitr::kable()
 
-#tuning random forest using nodesize, using caret package
+##################################
+#random forest tuning mtry, ntree
+##################################
+
+#check default model's mtry and ntree
+rf_mdl$mtry
+#4
+rf_mdl$ntree
+#500
+
+#mtry tuning using tuneRF
+set.seed(2021, sample.kind = "Rounding")
+tuned_mtry<- tuneRF(train_set%>%select(-DEFAULT), train_set$DEFAULT,doBest=T)
+tuned_mtry$mtry
+#[1] 4
+
+plot(tuned_mtry)
+
+#increase ntree=1000
+set.seed(2021, sample.kind = "Rounding")
+rf_tuned_mdl <- randomForest(
+  formula = DEFAULT ~ ., 
+  ntree=1000,
+  data = train_set,
+  mtry=4)
+
+plot(rf_tuned_mdl)
+
+rf_tuned_pred <- predict(rf_tuned_mdl, test_set)
+rf_tuned_prob <- predict(rf_tuned_mdl, test_set, type = "prob")
+
+confusionMatrix(as.factor(rf_tuned_pred), test_set$DEFAULT)
+#Accuracy : 0.8195
+#Sensitivity : 0.9491          
+#Specificity : 0.3637
+#Balanced Accuracy : 0.6564
+
+rf_tuned_roc <-roc(as.numeric(test_set$DEFAULT), as.numeric(rf_tuned_prob[,2]))
+plot(rf_tuned_roc, col="red")
+rf_tuned_roc$auc
+#Area under the curve:  0.7726
+
+#make a table
+
+results <- bind_rows(
+  results,
+  tibble(method="random forest tuned(mtry. ntree)",  
+         Accuracy = confusionMatrix(as.factor(rf_tuned_pred), test_set$DEFAULT)$overall[1],#Accuracy
+         Sensitivity = confusionMatrix(as.factor(rf_tuned_pred), test_set$DEFAULT)$byClass[1],#Sensitivity
+         Specificity = confusionMatrix(as.factor(rf_tuned_pred), test_set$DEFAULT)$byClass[2],#Specificity
+         AUC = as.numeric(rf_tuned_roc$auc)))
+
+results %>% knitr::kable()
+
+###############################
+#random forest tuning nodesize
+###############################
+
+#tuning random forest using nodesize, using caret package mtry=4, nttee=100
+#https://rafalab.github.io/dsbook/examples-of-algorithms.html#random-forests
 #caution! it takes a lot of time!
 
+set.seed(2021, sample.kind = "Rounding")
 nodesize <- seq(1, 51, 10)
 acc <- sapply(nodesize, function(ns){
   train(DEFAULT ~ ., 
@@ -603,6 +746,7 @@ acc <- sapply(nodesize, function(ns){
 })
 qplot(nodesize, acc)
 
+set.seed(2021, sample.kind = "Rounding")
 rf_node_tuned_mdl <- randomForest(DEFAULT ~ ., 
                              data= train_set,
                              ntree=1000,
@@ -611,13 +755,11 @@ rf_node_tuned_mdl <- randomForest(DEFAULT ~ .,
 rf_node_tuned_pred <-predict(rf_node_tuned_mdl, test_set)
 rf_node_tuned_prob <-predict(rf_node_tuned_mdl, test_set, type="prob")
 confusionMatrix(as.factor(rf_node_tuned_pred),test_set$DEFAULT) 
-#Accuracy : 0.8227 
-#Sensitivity : 0.9527        
-#Specificity : 0.3652
-#Balanced Accuracy : 0.6590
+#Accuracy : 0.8224 
+#Sensitivity : 0.9529        
+#Specificity : 0.3630
+#Balanced Accuracy : 0.6579
 
-rf_tuned_mdl$ntree
-  
 plot(rf_tuned_mdl)
 summary(rf_tuned_mdl)
 
@@ -625,7 +767,7 @@ summary(rf_tuned_mdl)
 rf_node_tuned_roc <-roc(as.numeric(test_set$DEFAULT), as.numeric(rf_node_tuned_prob[,2]))
 rf_node_tuned_roc$auc
 plot(rf_node_tuned_roc, col="red")
-#Area under the curve: 0.7805
+#Area under the curve: 0.7824
 
 #make a table
 results <- bind_rows(
@@ -638,10 +780,16 @@ results <- bind_rows(
 
 results %>% knitr::kable()
 
+##############################
+#random forest fewer features
+##############################
+
 #to improve further, what happens if we leave out features which are not important?
 varImp(rf_node_tuned_mdl)
 
 #from this, we will leave out 3 features, SEX, EDUCATION, MARRIAGE
+
+set.seed(2021, sample.kind = "Rounding")
 new_rf_node_tuned_mdl <- randomForest(DEFAULT ~ ., 
                              data= train_set %>% select(-SEX, -EDUCATION, -MARRIAGE),
                              ntree=1000,
@@ -652,17 +800,17 @@ new_rf_node_tuned_pred <-predict(new_rf_node_tuned_mdl, test_set)
 new_rf_node_tuned_prob <-predict(new_rf_node_tuned_mdl, test_set, type="prob")
 
 confusionMatrix(as.factor(new_rf_node_tuned_pred),test_set$DEFAULT) 
-#Accuracy : 0.8234   
-#Sensitivity : 0.9508       
-#Specificity : 0.3750      
-#Balanced Accuracy : 0.6629        
+#Accuracy : 0.8229   
+#Sensitivity : 0.9514       
+#Specificity : 0.3705      
+#Balanced Accuracy : 0.6610        
 
 #AUC
 new_rf_node_tuned_roc <-roc(as.numeric(test_set$DEFAULT), 
                        as.numeric(new_rf_node_tuned_prob[,2]))
 new_rf_node_tuned_roc$auc
 plot(new_rf_node_tuned_roc, col="red")
-#Area under the curve: 0.777 
+#Area under the curve: 0.7763 
 
 varImp(new_rf_tuned_mdl)
 

@@ -1,4 +1,4 @@
-#checking Multicollinearity
+#regression all
 
 glm_all_mdl <- glm(DEFAULT ~., 
                    data = train_set, 
@@ -11,9 +11,9 @@ glm_all_roc <- roc(test_set$DEFAULT,glm_all_prob)
 plot(glm_all_roc, col="red")
 glm_all_roc$auc
 
-
 summary(glm_all_mdl)
 
+#VIF
 if(!require(car)) install.packages("car") #basic library
 library(car)
 
@@ -23,9 +23,9 @@ dat <-vif(step_mdl_b)
 dat[dat[,1]>10]
 
 cor(train_set)
-#########
+
 #parallel
-#########
+
 
 library(parallel)
 i <- detectCores()
@@ -39,28 +39,68 @@ registerDoParallel(cl)
 #find optimal mtry
 ###################
 
+
+rf_mdl <- randomForest(
+  formula = DEFAULT ~ ., 
+  data = train_set)
+
+plot(rf_mdl)
+rf_mdl$mtry
+#[1] 4
+
+set.seed(2021, sample.kind = "Rounding")
 tuned_mtry<- tuneRF(train_set%>%select(-DEFAULT), train_set$DEFAULT,doBest=T)
 tuned_mtry$mtry
-#[1] 2
-tuned_mtry$ntree
+#[1] 4
+
+plot(tuned_mtry)
+tuned_mtry$forest
+summary(tuned_mtry)
 
 rf_tuned_mdl <- randomForest(
   formula = DEFAULT ~ ., 
   data = train_set,
-  mtry=2)
+  mtry=4)
+
+#increase ntree=1000
+
+rf_tuned_mdl <- randomForest(
+  formula = DEFAULT ~ ., 
+  ntree=1000,
+  data = train_set,
+  mtry=4)
+
+plot(rf_tuned_mdl)
 
 rf_tuned_pred <- predict(rf_tuned_mdl, test_set)
 rf_tuned_prob <- predict(rf_tuned_mdl, test_set, type = "prob")
 confusionMatrix(as.factor(rf_tuned_pred), test_set$DEFAULT)
-#Accuracy : 0.8194
-#Sensitivity : 0.9527          
-#Specificity : 0.3502
-#Balanced Accuracy : 0.6514
+#Accuracy : 0.8195
+#Sensitivity : 0.9482          
+#Specificity : 0.3667
+#Balanced Accuracy : 0.6575
 
 rf_tuned_roc <-roc(as.numeric(test_set$DEFAULT), as.numeric(rf_tuned_prob[,2]))
 plot(rf_tuned_roc, col="red")
 rf_tuned_roc$auc
-#Area under the curve: 0.7676
+#Area under the curve:  0.774
+
+ntree_tuned <- c(10, 20, 50, 100, 500, 1000)
+
+acc_tree <- sapply(ntree_tuned, function(n){
+  train(DEFAULT ~ ., 
+        method = "rf", 
+        data = train_set,
+        tuneGrid = data.frame(mtry = 4),
+        ntree =n)
+})
+
+  qplot(nodesize, acc)
+
+
+
+
+
 
 ##################
 #cross validation
