@@ -1,23 +1,68 @@
+
+
+set.seed(2021, sample.kind = "Rounding")
+index <- createDataPartition(original_default$default.payment.next.month, p=0.2, list=F, times=1)
+test <- original_default[index,]
+default <-original_default[-index,]
+
+index_2 <-createDataPartition(default$default.payment.next.month, p=0.2, list=F, times=1)
+validation <- default[index_2,]
+train <- default[-index_2,]
+
+################################################################################
 #regression all
 
 glm_all_mdl <- glm(DEFAULT ~., 
                    data = train_set, 
                    family = binomial(link = "logit"))
-glm_all_prob <- predict(glm_all_mdl, test_set,type="response")
+glm_all_prob <- predict(glm_all_mdl, validation_set,type="response")
 glm_all_pred <- ifelse(glm_all_prob >0.5,1,0)
 
-confusionMatrix(as.factor(glm_all_pred), test_set$DEFAULT)
-glm_all_roc <- roc(test_set$DEFAULT,glm_all_prob)
+confusionMatrix(as.factor(glm_all_pred), validation_set$DEFAULT)
+glm_all_roc <- roc(validation_set$DEFAULT,glm_all_prob)
 plot(glm_all_roc, col="red")
 glm_all_roc$auc
 
+
 summary(glm_all_mdl)
 
-#VIF
+
+#VIF variation inflation factor 
 if(!require(car)) install.packages("car") #basic library
 library(car)
 
-dat <-vif(glm_all_mdl)
+#check vif
+vif_mdl <- glm(DEFAULT ~LIMIT_BAL+ AGE + 
+                 BILL_AMT1 + BILL_AMT2 + BILL_AMT3 + BILL_AMT4 + BILL_AMT5 + BILL_AMT6 + 
+                 PAY_AMT1 + PAY_AMT2 + PAY_AMT3 + PAY_AMT4 + PAY_AMT5 + PAY_AMT6,  
+                 data= train_set,family = binomial(link = "logit"))
+dat <-vif(vif_mdl)
+dat[dat>10]
+
+#BILL_AMT1 BILL_AMT2 BILL_AMT3 BILL_AMT4 BILL_AMT5 BILL_AMT6, vif >10 
+
+names(train_set)
+glm_vif_mdl <- glm(DEFAULT ~ LIMIT_BAL + SEX + EDUCATION + MARRIAGE + AGE +
+                             PAY_0 + PAY_2 + PAY_3 + PAY_4 + PAY_5 + PAY_6 + 
+                             PAY_AMT1 + PAY_AMT2 + PAY_AMT3 + PAY_AMT4 + PAY_AMT5 + PAY_AMT6,
+                             data = train_set, 
+                   family = binomial(link = "logit"))
+glm_vif_prob <- predict(glm_vif_mdl, test_set,type="response")
+glm_vif_pred <- ifelse(glm_vif_prob >0.5,1,0)
+
+confusionMatrix(as.factor(glm_vif_pred), test_set$DEFAULT)
+#Accuracy : 0.815
+#Sensitivity : 0.9548
+#Specificity : 0.3230
+#Balanced Accuracy : 0.6389
+
+glm_vif_roc <- roc(validation_set$DEFAULT,glm_vif_prob)
+plot(glm_vif_roc, col="red")
+glm_vif_roc$auc
+#Area under the curve: 0.7622
+
+
+
 class(dat)
 dat <-vif(step_mdl_b)
 dat[dat[,1]>10]

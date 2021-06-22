@@ -34,7 +34,7 @@ download.file(url, "original_default.csv")
 original_default <- read_csv("original_default.csv")
 
 ################################################################################
-#data exploration and cleansing
+#data exploration
 ################################################################################
 
 #check dataset
@@ -46,34 +46,30 @@ summary(original_default)
 plot_correlation(original_default)
 # DEFAULT has relatively strong correlations in terms of PAY, and PAY_AMT 
 
+###########
+#1 outcome
+###########
+
+summary(original_default$default.payment.next.month)
+#the data explanation says;
+#https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset
+#0:non-default, 1:default
 
 #change name of "default.payment.next.month"
 n <-which(names(original_default)=="default.payment.next.month")
 names(original_default)[n] <- "DEFAULT"
 
-
-####################
-#outcomes ~ DEFAULT
-####################
-
-###########
-#1 outcome
-###########
-
-summary(original_default$DEFAULT)
-#the data explanation says;
-#https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset
-#0:non-default, 1:default
-
-#change outcomes into factor
-original_default$DEFAULT <- as.factor(original_default$DEFAULT)
+#show distribution graph
+ggplot(data=original_default, aes(default.payment.next.month)) +geom_bar()
 
 #show proportion of 0,1
-prop.table(table(original_default$DEFAULT))
+prop.table(table(original_default$default.payment.next.month))
 #0      1 
 #0.7788 0.2212 
 
-ggplot(data=original_default, aes(DEFAULT)) +geom_bar()
+#change outcome into factor
+original_default$DEFAULT <- as.factor(original_default$DEFAULT)
+
 
 #############
 #2 LIMIT_BAL
@@ -82,7 +78,7 @@ ggplot(data=original_default, aes(DEFAULT)) +geom_bar()
 summary(original_default$LIMIT_BAL)
 #numeric data
 
-ggplot(data=original_default, aes(LIMIT_BAL),fill=DEFAULT) +geom_histogram()
+ggplot(data=original_default, aes(LIMIT_BAL, fill=DEFAULT)) +geom_histogram()
 #distribution is skewed right
 
 #######
@@ -174,7 +170,7 @@ original_default %>% ggplot(aes(x=as.factor(MARRIAGE), fill= DEFAULT)) +
 summary(original_default$AGE)
 #numeric data
 
-ggplot(data=original_default, aes(AGE)) +geom_histogram()
+ggplot(data=original_default, aes(AGE, fill=DEFAULT)) +geom_histogram()
 
 #######
 #6 PAY
@@ -272,12 +268,12 @@ str(original_default$BILL_AMT1)
 mean(original_default$BILL_AMT6)
 sd(original_default$BILL_AMT6)
 
-b1 <- ggplot(data=original_default, aes(BILL_AMT1)) +geom_histogram()
-b2 <- ggplot(data=original_default, aes(BILL_AMT2)) +geom_histogram()
-b3 <- ggplot(data=original_default, aes(BILL_AMT3)) +geom_histogram()
-b4 <- ggplot(data=original_default, aes(BILL_AMT4)) +geom_histogram()
-b5 <- ggplot(data=original_default, aes(BILL_AMT5)) +geom_histogram()
-b6 <- ggplot(data=original_default, aes(BILL_AMT6)) +geom_histogram()
+b1 <- ggplot(data=original_default, aes(BILL_AMT1,fill= DEFAULT)) +geom_histogram()
+b2 <- ggplot(data=original_default, aes(BILL_AMT2,fill= DEFAULT)) +geom_histogram()
+b3 <- ggplot(data=original_default, aes(BILL_AMT3,fill= DEFAULT)) +geom_histogram()
+b4 <- ggplot(data=original_default, aes(BILL_AMT4,fill= DEFAULT)) +geom_histogram()
+b5 <- ggplot(data=original_default, aes(BILL_AMT5,fill= DEFAULT)) +geom_histogram()
+b6 <- ggplot(data=original_default, aes(BILL_AMT6,fill= DEFAULT)) +geom_histogram()
 
 grid.arrange(b1,b2,b3,b4,b5,b6, nrow=2, ncol=3)
 #they show almost similar distribution
@@ -294,12 +290,12 @@ summary(original_default$PAY_AMT1)
 #Amount of previous payment in September, 2005 (NT dollar)
 
 str(original_default$PAY_AMT1)
-p1 <- ggplot(data=original_default, aes(PAY_AMT1)) +geom_histogram()
-p2 <- ggplot(data=original_default, aes(PAY_AMT2)) +geom_histogram()
-p3 <- ggplot(data=original_default, aes(PAY_AMT3)) +geom_histogram()
-p4 <- ggplot(data=original_default, aes(PAY_AMT4)) +geom_histogram()
-p5 <- ggplot(data=original_default, aes(PAY_AMT5)) +geom_histogram()
-p6 <- ggplot(data=original_default, aes(PAY_AMT6)) +geom_histogram()
+p1 <- ggplot(data=original_default, aes(PAY_AMT1,fill= DEFAULT)) +geom_histogram()
+p2 <- ggplot(data=original_default, aes(PAY_AMT2,fill= DEFAULT)) +geom_histogram()
+p3 <- ggplot(data=original_default, aes(PAY_AMT3,fill= DEFAULT)) +geom_histogram()
+p4 <- ggplot(data=original_default, aes(PAY_AMT4,fill= DEFAULT)) +geom_histogram()
+p5 <- ggplot(data=original_default, aes(PAY_AMT5,fill= DEFAULT)) +geom_histogram()
+p6 <- ggplot(data=original_default, aes(PAY_AMT6,fill= DEFAULT)) +geom_histogram()
 
 grid.arrange(p1,p2,p3,p4,p5,p6, nrow=2, ncol=3)
 #they show almost similar distribution
@@ -340,13 +336,22 @@ original_default[num_col] <-original_default %>% select(-all_of(cat_col)) %>% sc
 str(original_default)
 
 ###################################
-#spliting into train_set, test_set
+#spliting into train_set,validation_set, test_set
 ###################################
 
+#First we split data into test_set, and default.Test_set will be only used as evaluation
 set.seed(2021, sample.kind = "Rounding")
-test_index <- createDataPartition(original_default$DEFAULT, p=0.2, list=F, times=1)
-test_set <- original_default[test_index,]
-train_set <- original_default[-test_index,]
+index_1 <- createDataPartition(original_default$DEFAULT, p=0.2, list=F, times=1)
+test_set <- original_default[index_1,]
+default <- original_default[-index_1,]
+
+#as we tune hyperparameters, we split default into train_set and validation_set.
+#validation set will be used when tuning models
+
+set.seed(2021, sample.kind = "Rounding")
+index_2 <- createDataPartition(default$DEFAULT, p=0.2, list=F, times=1)
+validation_set <-default[index_2,]
+train_set <- default[-index_2,]
 
 ################################################################################
 #model analysis
@@ -377,26 +382,28 @@ confusionMatrix(base_pred, test_set$DEFAULT)
 
 #as this is a classification, we use logistic regression
 
-#pick up features, SEX, EDUCATION, MARRIAGE, AGE, PAY_0, BILL_AMT1, and PAY_AMT1
+#pick up features, SEX, EDUCATION, MARRIAGE, AGE, 
+#PAY_0, PAY_2, PAY_3, PAY_4, PAY_5, PAY_6, BILL_AMT1, and PAY_AMT1
 glm_mdl <- glm(DEFAULT ~ SEX + EDUCATION + MARRIAGE + AGE + 
-                 PAY_0 +BILL_AMT1 +PAY_AMT1, 
+                         PAY_0 + PAY_2 + PAY_3 + PAY_4 + PAY_5 + PAY_6 +
+                         BILL_AMT1 +PAY_AMT1, 
                data = train_set, 
                family = binomial(link = "logit"))
 
-glm_prob <- predict(glm_mdl, test_set,type="response")
+glm_prob <- predict(glm_mdl, validation_set,type="response")
 glm_pred <- ifelse(glm_prob >0.5,1,0)
 
 summary(glm_mdl)
-confusionMatrix(as.factor(glm_pred), test_set$DEFAULT)
-#Accuracy : 0.8229
-#Sensitivity : 0.9634         
-#Specificity : 0.3283
+confusionMatrix(as.factor(glm_pred), validation_set$DEFAULT)
+#Accuracy : 0.8175
+#Sensitivity : 0.9537         
+#Specificity : 0.3380
 #Balanced Accuracy : 0.6459
 
-glm_roc <- roc(test_set$DEFAULT,glm_prob)
+glm_roc <- roc(validation_set$DEFAULT,glm_prob)
 plot(glm_roc, col="red")
 glm_roc$auc
-#Area under the curve: 0.7488
+#Area under the curve: 0.7543
 
 #make a table
 results <- tibble(method = "glm fewer predictors", 
