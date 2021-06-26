@@ -15,6 +15,9 @@ library(caret)
 if(!require(rpart)) install.packages("rpart") #to make decision tree model
 library(rpart)
 
+if(!require(rpart.plot)) install.packages("rpart.plot") #to plot decision tree
+library(rpart.plot)
+
 if(!require(pROC)) install.packages("pROC")#ROC value and graph
 library(pROC)
 
@@ -23,6 +26,10 @@ library(DataExplorer)
 
 if(!require(randomForest)) install.packages("randomForest") #random forest
 library(randomForest)
+
+if(!require(car)) install.packages("car") #VIF variation inflation factor 
+library(car)
+
 
 ######
 #data
@@ -249,6 +256,7 @@ graph_P6 <-original_default %>% ggplot(aes(x=as.factor(PAY_6), fill= DEFAULT)) +
   geom_bar(position="fill") +
   ggtitle("PAY_6")
 
+#to show graph side by side, we use "grid.arrange" function in "gridExtra" package
 grid.arrange(graph_P0, graph_P2, graph_P3, graph_P4, graph_P5, graph_P6, nrow=2, ncol=3)
 
 ############
@@ -321,8 +329,9 @@ original_default <- original_default %>%
          PAY_6 = as.factor(PAY_6) )
 
 #scaling
+# we use "scale" function to standardize predictors. 
 
-#categorical data columns 
+#categorical data columns. we assume these can be defined as factors.
 cat_col <- c("SEX", "EDUCATION", "MARRIAGE",
              "PAY_0", "PAY_2", "PAY_3", "PAY_4", "PAY_5", "PAY_6", "DEFAULT")
 #all columns
@@ -334,12 +343,14 @@ num_col <- all_col[-which(all_col %in% cat_col)]
 #scaling numerical data
 original_default[num_col] <-original_default %>% select(-all_of(cat_col)) %>% scale()
 str(original_default)
+summary(original_default)
 
-###################################
+##################################################
 #spliting into train_set,validation_set, test_set
-###################################
+##################################################
 
 #First we split data into test_set, and default.Test_set will be only used as evaluation
+#we use "createDataPartition" function in "caret" package
 set.seed(2021, sample.kind = "Rounding")
 index_1 <- createDataPartition(original_default$DEFAULT, p=0.2, list=F, times=1)
 test_set <- original_default[index_1,]
@@ -361,7 +372,7 @@ train_set <- default[-index_2,]
 #baseline prediction
 ####################
 
-#all predicted as non_default
+#all predicted as non_default make factor vectors 
 base_pred <-factor(numeric(length(test_set$DEFAULT)),levels=c("0","1"))
 
 #confusion matrix
@@ -372,6 +383,14 @@ confusionMatrix(base_pred, test_set$DEFAULT)
 # Balanced Accuracy : 0.5000
 
 #we need to find models which exceed these values(except sensitivity)
+
+#evaluation method
+#as this is a classification problem, we calculate accuracy using confusion matrix.
+#however, as is shown in this baseline prediction, default rate is imbalanced. 
+#as well as accuracy, we will pay attention to specificity and balanced accuracy.
+#we will also evaluate models calculate probabilities and then calculate auc.
+#a model which produces the best accuracy and auc can be determined as the best model.
+
 #roc curve and auc explanation
 
 ################################################################################
@@ -380,109 +399,50 @@ confusionMatrix(base_pred, test_set$DEFAULT)
 #logistic regression fewer predictors
 ######################################
 
-#as this is a classification, we use logistic regression
+#as this is a classification, we use logistic regression. we use glm function
+#there is a possibility of multicolliearity
+#to find multicollinerity, we use "vif" function from "car"package
+#https://www.rdocumentation.org/packages/regclass/versions/1.6/topics/VIF
 
-#pick up features, SEX, EDUCATION, MARRIAGE, AGE, 
-#PAY_0, PAY_2, PAY_3, PAY_4, PAY_5, PAY_6, BILL_AMT1, and PAY_AMT1
-glm_mdl <- glm(DEFAULT ~ SEX + EDUCATION + MARRIAGE + AGE + 
-                         PAY_0 + PAY_2 + PAY_3 + PAY_4 + PAY_5 + PAY_6 +
-                         BILL_AMT1 +PAY_AMT1, 
-               data = train_set, 
-               family = binomial(link = "logit"))
+#to check multicollinerity, we pick up numeric predictors
+names(Filter(is.numeric, train_set))
 
-glm_prob <- predict(glm_mdl, validation_set,type="response")
-glm_pred <- ifelse(glm_prob >0.5,1,0)
+#make numeric only model and check vif
+vif_mdl <- glm(DEFAULT ~LIMIT_BAL+ AGE + 
+                 BILL_AMT1 + BILL_AMT2 + BILL_AMT3 + BILL_AMT4 + BILL_AMT5 + BILL_AMT6 + 
+                 PAY_AMT1 + PAY_AMT2 + PAY_AMT3 + PAY_AMT4 + PAY_AMT5 + PAY_AMT6,  
+               data= train_set, family = binomial(link = "logit"))
+dat <-vif(vif_mdl)
 
-summary(glm_mdl)
-confusionMatrix(as.factor(glm_pred), validation_set$DEFAULT)
-#Accuracy : 0.8175
-#Sensitivity : 0.9537         
-#Specificity : 0.3380
-#Balanced Accuracy : 0.6459
+#finding values which are exceeding 10 
+dat[dat>10]
 
-glm_roc <- roc(validation_set$DEFAULT,glm_prob)
-plot(glm_roc, col="red")
-glm_roc$auc
-#Area under the curve: 0.7543
+#BILL_AMT1 BILL_AMT2 BILL_AMT3 BILL_AMT4 BILL_AMT5 BILL_AMT6, vif >10 
+#leave out these columns
 
-#make a table
-results <- tibble(method = "glm fewer predictors", 
-                  Accuracy =confusionMatrix(as.factor(glm_pred), test_set$DEFAULT)$overall[1],#Accuracy
-                  Sensitivity =confusionMatrix(as.factor(glm_pred), test_set$DEFAULT)$byClass[1],#Sensitivity
-                  Specificity =confusionMatrix(as.factor(glm_pred), test_set$DEFAULT)$byClass[2],#Specificity
-                  AUC =as.numeric(glm_roc$auc))
-results %>% knitr::kable()
+#make a model
+glm_vif_mdl <- glm(DEFAULT ~ LIMIT_BAL + SEX + EDUCATION + MARRIAGE + AGE +
+                     PAY_0 + PAY_2 + PAY_3 + PAY_4 + PAY_5 + PAY_6 + 
+                     PAY_AMT1 + PAY_AMT2 + PAY_AMT3 + PAY_AMT4 + PAY_AMT5 + PAY_AMT6,
+                   data = train_set, 
+                   family = binomial(link = "logit"))
 
-#####################################################
-#stepwise regression using both forward and backward
-#####################################################
+#predict
+glm_vif_prob <- predict(glm_vif_mdl, validation_set,type="response")
+glm_vif_pred <- ifelse(glm_vif_prob >0.5,1,0)
 
-#stepwise regression explanation
+#to show accuracy we use confusionMatrix function in caret library
+confusionMatrix(as.factor(glm_vif_pred), validation_set$DEFAULT)#accept only factor
 
-#a null model with no predictors
-null_model <- glm(DEFAULT~1, data = train_set, family = binomial(link = "logit"))
-
-#q full model using all of the potential predictors
-full_model <- glm(DEFAULT~., data = train_set, family = binomial(link = "logit"))
-
-#forward stepwise algorithm
-step_mdl_f   <- step(null_model, 
-                    scope = list(lower = null_model, upper = full_model), 
-                    direction = "forward")
-
-step_prob_f <- predict(step_mdl_f, test_set,type="response")
-step_pred_f <- ifelse(step_prob_f >0.5,1,0)
-confusionMatrix(as.factor(step_pred_f), test_set$DEFAULT)
-#Accuracy : 0.825
-#Sensitivity : 0.9572
-#Specificity : 0.3599
-#Balanced Accuracy : 0.6586
-
-#ROC
-step_roc_f <- roc(test_set$DEFAULT, step_prob_f)
-plot(step_roc_f, col = "red")
-step_roc_f$auc
-#Area under the curve: 0.7734
-
-#backward
-step_mdl_b   <- step(full_model, 
-                   scope = list(lower = null_model, upper = full_model), 
-                   direction = "backward")
-
-step_prob_b <- predict(step_mdl_b, test_set,type="response")
-step_pred_b <- ifelse(step_prob_b >0.5,1,0)
-
-confusionMatrix(as.factor(step_pred_b), test_set$DEFAULT)
-#Accuracy : 0.825
-#Sensitivity : 0.9572
-#Specificity : 0.3599
-#Balanced Accuracy : 0.6586
-
-#ROC
-step_roc_b <- roc(test_set$DEFAULT,step_prob_b)
-plot(step_roc_b, col = "red")
-step_roc_b$auc
-#Area under the curve: 0.7734
-
-summary(step_mdl_b)
-summary(step_mdl_f)
-
-#both forward and backward come to the same conclusion
-
-#this model uses predictors such as 
-#LIMIT_BAL, SEX, EDUCATION, MARRIAGE, 
-#PAY_0, PAY_3, PAY_4, PAY_5, PAY_6, BILL_AMT3, BILL_AMT5
-#PAY_AMT1, PAY_AMT2, PAY_AMT5,  PAY_AMT6
+#F1
 
 #make a table
-results <- bind_rows(
-  results,
-  tibble(method="glm stepwise",  
-  Accuracy = confusionMatrix(as.factor(step_pred_b), test_set$DEFAULT)$overall[1],#Accuracy
-  Sensitivity = confusionMatrix(as.factor(step_pred_b), test_set$DEFAULT)$byClass[1],#Sensitivity
-  Specificity = confusionMatrix(as.factor(step_pred_b), test_set$DEFAULT)$byClass[2],#Specificity
-  AUC = as.numeric(step_roc_b$auc)))
-
+results <- tibble(method = "logistic regresion", 
+                  Accuracy =confusionMatrix(as.factor(glm_vif_pred), validation_set$DEFAULT)$overall[1],#Accuracy
+                  Sensitivity =confusionMatrix(as.factor(glm_vif_pred), validation_set$DEFAULT)$byClass[1],#Sensitivity
+                  Specificity =confusionMatrix(as.factor(glm_vif_pred), validation_set$DEFAULT)$byClass[2],#Specificity
+                  F1 = confusionMatrix(as.factor(glm_vif_pred), validation_set$DEFAULT)$byClass[7],#Balanced Accuracy
+)
 results %>% knitr::kable()
 
 ################################################################################
@@ -491,179 +451,104 @@ results %>% knitr::kable()
 #decision tree default
 #######################
 
+#use CART classification and regression tree
 #rpart ~ using default minsplit=20, cp=0.01
 
 set.seed(2021, sample.kind = "Rounding")
 rpart_mdl <-rpart(formula = DEFAULT ~ .,data = train_set)
 
-rpart_pred <- predict(rpart_mdl, test_set, type="class")
-rpart_prob <- predict(rpart_mdl, test_set)
+#prediction
+rpart_pred <- predict(rpart_mdl, validation_set, type="class")
 
-confusionMatrix(as.factor(rpart_pred), test_set$DEFAULT)
-#Accuracy : 0.8229 
-#Sensitivity : 0.9613  
-#Specificity : 0.3358 
-#Balanced Accuracy : 0.6486
+#probability
+rpart_prob <- predict(rpart_mdl, validation_set)
 
-#draw decision tree
-plot(rpart_mdl,margin=0.1)
-text(rpart_mdl, cex=1)
+confusionMatrix(as.factor(rpart_pred), validation_set$DEFAULT)
 
-#AUC
-rpart_roc <-roc(as.numeric(test_set$DEFAULT),as.numeric(rpart_prob[,2]))
-plot(rpart_roc, col="red")
-rpart_roc$auc
-#Area under the curve: 0.6486
+#draw decision tree rpart.plot is good function to show decision tree clearly.
+library(rpart.plot)
+rpart.plot(rpart_mdl)
 
 #find used features
 rpart_mdl$variable.importance
 #this model illustrates that PAY_0 is overwhelmingly important.
 
-
 #make a table
 results <- bind_rows(
   results,
-  tibble(method="rpart default",  
-         Accuracy = confusionMatrix(as.factor(rpart_pred), test_set$DEFAULT)$overall[1],#Accuracy
-         Sensitivity = confusionMatrix(as.factor(rpart_pred), test_set$DEFAULT)$byClass[1],#Sensitivity
-         Specificity = confusionMatrix(as.factor(rpart_pred), test_set$DEFAULT)$byClass[2],#Specificity
-         AUC = as.numeric(rpart_roc$auc)))
+  tibble(method="CART default",  
+         Accuracy = confusionMatrix(as.factor(rpart_pred), validation_set$DEFAULT)$overall[1],#Accuracy
+         Sensitivity = confusionMatrix(as.factor(rpart_pred), validation_set$DEFAULT)$byClass[1],#Sensitivity
+         Specificity = confusionMatrix(as.factor(rpart_pred), validation_set$DEFAULT)$byClass[2],#Specificity
+         F1 = confusionMatrix(as.factor(rpart_pred), validation_set$DEFAULT)$byClass[7]) #Balanced accuracy
+         )
 
 results %>% knitr::kable()
 
-#################################
-#decision tree cross validataion
-#################################
-
-#rpart ~ cross validation using caret finding optimal cp value
-
-set.seed(2021, sample.kind = "Rounding")
-rpart_cv_mdl <- train(DEFAULT ~ ., 
-                     method = "rpart", 
-                     tuneGrid = data.frame(cp = seq(0, 0.05, len = 25)), 
-                     data = train_set)
-
-#find optimal cp
-plot(rpart_cv_mdl)
-cp_opt <- rpart_cv_mdl$bestTune
-cp_opt
-# 0.00625
-
-#calculate again
-rpart_cv_mdl <- train(DEFAULT ~ ., 
-                     method = "rpart", 
-                     tuneGrid = cp_opt, 
-                     data = train_set)
-
-#draw decision tree
-plot(rpart_cv_mdl$finalModel,margin=0.1)
-text(rpart_cv_mdl$finalModel,cex=0.5)
-
-rpart_cv_mdl_prob <- predict(rpart_cv_mdl, test_set, type="prob")
-rpart_cv_mdl_pred <- ifelse(rpart_cv_mdl_prob[,1] >0.5,0,1)
-
-confusionMatrix(as.factor(rpart_cv_mdl_pred), test_set$DEFAULT)
-# Accuracy : 0.8212
-# Sensitivity : 0.9643         
-# Specificity : 0.3178 
-# Balanced Accuracy : 0.6410
-
-#AUC
-rpart_cv_mdl_roc <-roc(as.numeric(test_set$DEFAULT), as.numeric(rpart_cv_mdl_prob[,2]))
-plot(rpart_cv_mdl_roc, col="red")
-rpart_cv_mdl_roc$auc
-#Area under the curve: 0.6882
-
-#pick up important predictors
-rpart_cv_mdl %>% 
-  varImp() 
-#PAY_0 ~ PAY_6, PAY_AMT1,5,6
-
-#make a table
-results <- bind_rows(
-  results,
-  tibble(method="rpart cv",  
-         Accuracy = confusionMatrix(as.factor(rpart_cv_mdl_pred), test_set$DEFAULT)$overall[1],#Accuracy
-         Sensitivity = confusionMatrix(as.factor(rpart_cv_mdl_pred), test_set$DEFAULT)$byClass[1],#Sensitivity
-         Specificity = confusionMatrix(as.factor(rpart_cv_mdl_pred), test_set$DEFAULT)$byClass[2],#Specificity
-         AUC = as.numeric(rpart_cv_mdl_roc$auc)))
-
-results %>% knitr::kable()
-
-##########################
-#decision tree smaller cp
-##########################
-
-#rpart ~tuning using smaller cp and split ="information"
+##############################
+#decision tree further tuning
+##############################
+#we use "train" function in "caret" package. and tune cp
+#cross validation 
+#rpart ~tuning using smaller cp, less than 0.01
 
 set.seed(2021, sample.kind = "Rounding")
-rpart_tuned_mdl <- rpart(DEFAULT ~ .,
-                         data = train_set,
-                         method = 'class',
-                         parms = list(split='information'),
-                         control = rpart.control(cp=0.001))
+rpart_tuned_mdl <- train(DEFAULT ~ ., 
+                      method = "rpart", 
+                      tuneGrid = data.frame(cp = seq(0, 0.01, len = 25)),
+                      control = rpart.control(minsplit = 0),
+                      data = train_set)
+
+plot(rpart_tuned_mdl)
+opt_cp <-rpart_tuned_mdl$bestTune
 
 #draw decision tree
-plot(rpart_tuned_mdl,margin=0.1)
-text(rpart_tuned_mdl, cex=0.75)
+rpart.plot(rpart_tuned_mdl$finalModel)
+#note: numeric values are scaled
 
-rpart_tuned_pred <- predict(rpart_tuned_mdl, test_set, type="class")
-rpart_tuned_prob <- predict(rpart_tuned_mdl, test_set)
+#prediction
+rpart_tuned_pred <- predict(rpart_tuned_mdl, validation_set)
 
-confusionMatrix(as.factor(rpart_tuned_pred), test_set$DEFAULT)
-#Accuracy : 0.8239 
-#Sensitivity : 0.9542 
-#Specificity : 0.3652  
-#Balanced Accuracy : 0.6597
-
-#AUC
-rpart_tuned_roc <- roc(as.numeric(test_set$DEFAULT),as.numeric(rpart_tuned_prob[,2]))
-plot(rpart_tuned_roc, col="red")
-rpart_tuned_roc$auc
-#Area under the curve: 0.7015
+#confusion matrix
+confusionMatrix(as.factor(rpart_tuned_pred), validation_set$DEFAULT)
 
 #important features
 rpart_tuned_mdl %>% 
   varImp() 
-#except EDUCAION, MARRIAGE, PAY_AMT5 are used. PAY_0~5 have importance
 
 #make a table
 results <- bind_rows(
   results,
-  tibble(method="rpart smaller cp",  
-         Accuracy = confusionMatrix(as.factor(rpart_tuned_pred), test_set$DEFAULT)$overall[1],#Accuracy
-         Sensitivity = confusionMatrix(as.factor(rpart_tuned_pred), test_set$DEFAULT)$byClass[1],#Sensitivity
-         Specificity = confusionMatrix(as.factor(rpart_tuned_pred), test_set$DEFAULT)$byClass[2],#Specificity
-         AUC = as.numeric(rpart_tuned_roc$auc)))
-
+  tibble(method="CART tuned cp",  
+         Accuracy = confusionMatrix(as.factor(rpart_tuned_pred), validation_set$DEFAULT)$overall[1],#Accuracy
+         Sensitivity = confusionMatrix(as.factor(rpart_tuned_pred), validation_set$DEFAULT)$byClass[1],#Sensitivity
+         Specificity = confusionMatrix(as.factor(rpart_tuned_pred), validation_set$DEFAULT)$byClass[2],#Specificity
+         F1 = confusionMatrix(as.factor(rpart_tuned_pred), validation_set$DEFAULT)$byClass[7]) #Balanced accuracy
+)
 results %>% knitr::kable()
-
 ################################################################################
 
 #######################
 #random forest default
 #######################
 
+library(ranger)
+
 set.seed(2021, sample.kind = "Rounding")
-rf_mdl <- randomForest(
+rf_mdl <- ranger(
   formula = DEFAULT ~ ., 
-  data = train_set)
+  data = train_set,
+  probability = F)
 
-rf_pred <- predict(rf_mdl, test_set)
-rf_prob <- predict(rf_mdl, test_set, type = "prob")
+rf_mdl
 
-confusionMatrix(as.factor(rf_pred), test_set$DEFAULT)
-# Accuracy : 0.8185
-# Sensitivity : 0.9489           
-# Specificity : 0.3599   
-# Balanced Accuracy : 0.6544
+rf_pred <- predict(rf_mdl, validation_set)$predictions
 
-
-#AUC
-rf_roc <-roc(as.numeric(test_set$DEFAULT), as.numeric(rf_prob[,2]))
-plot(rf_roc, col="red")
-rf_roc$auc
-#Area under the curve: 0.7707
+confusionMatrix(rf_pred, validation_set$DEFAULT)
+#Accuracy : 0.8192
+#Sensitivity : 0.9529       
+#Specificity : 0.3484
+#Balanced Accuracy : 0.6507
 
 rf_mdl %>% 
   varImp() 
@@ -673,163 +558,68 @@ rf_mdl %>%
 results <- bind_rows(
   results,
   tibble(method="random forest default",  
-         Accuracy = confusionMatrix(as.factor(rf_pred), test_set$DEFAULT)$overall[1],#Accuracy
-         Sensitivity = confusionMatrix(as.factor(rf_pred), test_set$DEFAULT)$byClass[1],#Sensitivity
-         Specificity = confusionMatrix(as.factor(rf_pred), test_set$DEFAULT)$byClass[2],#Specificity
-         AUC = as.numeric(rf_roc$auc)))
+         Accuracy = confusionMatrix(as.factor(rf_pred), validation_set$DEFAULT)$overall[1],#Accuracy
+         Sensitivity = confusionMatrix(as.factor(rf_pred), validation_set$DEFAULT)$byClass[1],#Sensitivity
+         Specificity = confusionMatrix(as.factor(rf_pred), validation_set$DEFAULT)$byClass[2],#Specificity
+         F1 = confusionMatrix(as.factor(rf_pred), validation_set$DEFAULT)$byClass[7]) #Balanced accuracy
+         )
 
 results %>% knitr::kable()
 
-##################################
-#random forest tuning mtry, ntree
-##################################
+################################
+#random forest cross validation
+################################
+#grid search
+modelLookup("ranger")
 
-#check default model's mtry and ntree
-rf_mdl$mtry
-#4
-rf_mdl$ntree
-#500
-
-#mtry tuning using tuneRF
 set.seed(2021, sample.kind = "Rounding")
-tuned_mtry<- tuneRF(train_set%>%select(-DEFAULT), train_set$DEFAULT,doBest=T)
-tuned_mtry$mtry
-#[1] 4
+rf_cv_mdl <- 
+  train(
+    DEFAULT~ .,
+    data = train_set,
+    method = 'ranger',
+    metric = 'Accuracy',
+    num.trees = 1000,
+    tuneGrid = expand.grid(mtry = 3:10, splitrule = 'gini', min.node.size = 1), 
+    trControl = trainControl(method = 'cv', number = 5))
 
-plot(tuned_mtry)
+plot(rf_cv_mdl)
 
-#increase ntree=1000
-set.seed(2021, sample.kind = "Rounding")
-rf_tuned_mdl <- randomForest(
-  formula = DEFAULT ~ ., 
-  ntree=1000,
-  data = train_set,
-  mtry=4)
+#validation
+rf_cv_pred <- predict(rf_cv_mdl, validation_set)
 
-plot(rf_tuned_mdl)
-
-rf_tuned_pred <- predict(rf_tuned_mdl, test_set)
-rf_tuned_prob <- predict(rf_tuned_mdl, test_set, type = "prob")
-
-confusionMatrix(as.factor(rf_tuned_pred), test_set$DEFAULT)
-#Accuracy : 0.8195
-#Sensitivity : 0.9491          
-#Specificity : 0.3637
-#Balanced Accuracy : 0.6564
-
-rf_tuned_roc <-roc(as.numeric(test_set$DEFAULT), as.numeric(rf_tuned_prob[,2]))
-plot(rf_tuned_roc, col="red")
-rf_tuned_roc$auc
-#Area under the curve:  0.7726
+#confusion Matrix
+confusionMatrix(rf_cv_pred, validation_set$DEFAULT)
+#Accuracy : 0.8136  
+#Sensitivity : 0.9601
+#Specificity : 0.2976
+#Balanced Accuracy : 0.6289
 
 #make a table
 
 results <- bind_rows(
   results,
-  tibble(method="random forest tuned(mtry. ntree)",  
-         Accuracy = confusionMatrix(as.factor(rf_tuned_pred), test_set$DEFAULT)$overall[1],#Accuracy
-         Sensitivity = confusionMatrix(as.factor(rf_tuned_pred), test_set$DEFAULT)$byClass[1],#Sensitivity
-         Specificity = confusionMatrix(as.factor(rf_tuned_pred), test_set$DEFAULT)$byClass[2],#Specificity
-         AUC = as.numeric(rf_tuned_roc$auc)))
+  tibble(method="random forest tuned ",  
+         Accuracy = confusionMatrix(rf_cv_pred, validation_set$DEFAULT)$overall[1],#Accuracy
+         Sensitivity = confusionMatrix(rf_cv_pred, validation_set$DEFAULT)$byClass[1],#Sensitivity
+         Specificity = confusionMatrix(rf_cv_pred, validation_set$DEFAULT)$byClass[2],#Specificity
+         F1= confusionMatrix(rf_cv_pred, validation_set$DEFAULT)$byClass[7])
+  )
+
 
 results %>% knitr::kable()
 
-###############################
-#random forest tuning nodesize
-###############################
+################################################################################
+#evaluation
+################################################################################
+final_pred <- predict(rf_cv_mdl, test_set)
+confusionMatrix(final_pred, test_set$DEFAULT)
 
-#tuning random forest using nodesize, using caret package mtry=4, nttee=100
-#https://rafalab.github.io/dsbook/examples-of-algorithms.html#random-forests
-#caution! it takes a lot of time!
+final_results <- tibble( 
+                  Accuracy =confusionMatrix(final_pred, test_set$DEFAULT)$overall[1],#Accuracy
+                  Sensitivity =confusionMatrix(final_pred, test_set$DEFAULT)$byClass[1],#Sensitivity
+                  Specificity =confusionMatrix(final_pred, test_set$DEFAULT)$byClass[2],#Specificity
+                  F1 = confusionMatrix(final_pred, test_set$DEFAULT)$byClass[7])#Balanced Accuracy
 
-set.seed(2021, sample.kind = "Rounding")
-nodesize <- seq(1, 51, 10)
-acc <- sapply(nodesize, function(ns){
-  train(DEFAULT ~ ., 
-        method = "rf", 
-        data = train_set,
-        tuneGrid = data.frame(mtry = 4),
-        nodesize = ns)$results$Accuracy
-})
-qplot(nodesize, acc)
+final_results %>% knitr::kable()
 
-set.seed(2021, sample.kind = "Rounding")
-rf_node_tuned_mdl <- randomForest(DEFAULT ~ ., 
-                             data= train_set,
-                             ntree=1000,
-                             nodesize = nodesize[which.max(acc)])
-
-rf_node_tuned_pred <-predict(rf_node_tuned_mdl, test_set)
-rf_node_tuned_prob <-predict(rf_node_tuned_mdl, test_set, type="prob")
-confusionMatrix(as.factor(rf_node_tuned_pred),test_set$DEFAULT) 
-#Accuracy : 0.8224 
-#Sensitivity : 0.9529        
-#Specificity : 0.3630
-#Balanced Accuracy : 0.6579
-
-plot(rf_tuned_mdl)
-summary(rf_tuned_mdl)
-
-#AUC
-rf_node_tuned_roc <-roc(as.numeric(test_set$DEFAULT), as.numeric(rf_node_tuned_prob[,2]))
-rf_node_tuned_roc$auc
-plot(rf_node_tuned_roc, col="red")
-#Area under the curve: 0.7824
-
-#make a table
-results <- bind_rows(
-  results,
-  tibble(method="random forest nodes_tuned",  
-         Accuracy = confusionMatrix(as.factor(rf_node_tuned_pred),test_set$DEFAULT)$overall[1],#Accuracy
-         Sensitivity = confusionMatrix(as.factor(rf_node_tuned_pred),test_set$DEFAULT)$byClass[1],#Sensitivity
-         Specificity = confusionMatrix(as.factor(rf_node_tuned_pred),test_set$DEFAULT)$byClass[2],#Specificity
-         AUC = as.numeric(rf_node_tuned_roc$auc)))
-
-results %>% knitr::kable()
-
-##############################
-#random forest fewer features
-##############################
-
-#to improve further, what happens if we leave out features which are not important?
-varImp(rf_node_tuned_mdl)
-
-#from this, we will leave out 3 features, SEX, EDUCATION, MARRIAGE
-
-set.seed(2021, sample.kind = "Rounding")
-new_rf_node_tuned_mdl <- randomForest(DEFAULT ~ ., 
-                             data= train_set %>% select(-SEX, -EDUCATION, -MARRIAGE),
-                             ntree=1000,
-                             nodesize = nodesize[which.max(acc)])
-
-
-new_rf_node_tuned_pred <-predict(new_rf_node_tuned_mdl, test_set)
-new_rf_node_tuned_prob <-predict(new_rf_node_tuned_mdl, test_set, type="prob")
-
-confusionMatrix(as.factor(new_rf_node_tuned_pred),test_set$DEFAULT) 
-#Accuracy : 0.8229   
-#Sensitivity : 0.9514       
-#Specificity : 0.3705      
-#Balanced Accuracy : 0.6610        
-
-#AUC
-new_rf_node_tuned_roc <-roc(as.numeric(test_set$DEFAULT), 
-                       as.numeric(new_rf_node_tuned_prob[,2]))
-new_rf_node_tuned_roc$auc
-plot(new_rf_node_tuned_roc, col="red")
-#Area under the curve: 0.7763 
-
-varImp(new_rf_tuned_mdl)
-
-#make a table
-results <- bind_rows(
-  results,
-  tibble(method="random forest nodes_tuned fewer predictors",  
-         Accuracy = confusionMatrix(as.factor(new_rf_node_tuned_pred),test_set$DEFAULT)$overall[1],#Accuracy
-         Sensitivity = confusionMatrix(as.factor(new_rf_node_tuned_pred),test_set$DEFAULT)$byClass[1],#Sensitivity
-         Specificity = confusionMatrix(as.factor(new_rf_node_tuned_pred),test_set$DEFAULT)$byClass[2],#Specificity
-         AUC = as.numeric(new_rf_node_tuned_roc$auc)))
-
-results %>% knitr::kable()
-
-###############################################################################
