@@ -1,35 +1,15 @@
 ###########################
 #package used in this code
 ###########################
-#tidyverse, gridExtra, caret, rpart, pROC, DataExplorer, randomForest
+#tidyverse, gridExtra, caret, rpart, pROC, DataExplorer, rager, car
 
 if(!require(tidyverse)) install.packages("tidyverse") #basic library
-library(tidyverse)
-
 if(!require(gridExtra)) install.packages("gridExtra") #expansion of ggplot
-library(gridExtra)
-
 if(!require(caret)) install.packages("caret") #cross validation 
-library(caret)
-
 if(!require(rpart)) install.packages("rpart") #to make decision tree model
-library(rpart)
-
 if(!require(rpart.plot)) install.packages("rpart.plot") #to plot decision tree
-library(rpart.plot)
-
-if(!require(pROC)) install.packages("pROC")#ROC value and graph
-library(pROC)
-
 if(!require(DataExplorer)) install.packages("DataExplorer") #to do data exploration
-library(DataExplorer)
-
-if(!require(randomForest)) install.packages("randomForest") #random forest
-library(randomForest)
-
-if(!require(car)) install.packages("car") #VIF variation inflation factor 
-library(car)
-
+if(!require(ranger)) install.packages("ranger") #random forest
 
 ######
 #data
@@ -364,6 +344,16 @@ index_2 <- createDataPartition(default$DEFAULT, p=0.2, list=F, times=1)
 validation_set <-default[index_2,]
 train_set <- default[-index_2,]
 
+#check default ratio
+#train_set
+prop.table(table(train_set$DEFAULT))
+#validation_set
+prop.table(table(validation_set$DEFAULT))
+#test_set
+prop.table(table(test_set$DEFAULT))
+
+#almost similar ratio
+
 ################################################################################
 #model analysis
 ################################################################################
@@ -383,65 +373,48 @@ confusionMatrix(base_pred, test_set$DEFAULT)
 # Balanced Accuracy : 0.5000
 
 #we need to find models which exceed these values(except sensitivity)
+#in this model, sensitivity is 1, but specificity is 0.
+#this means the credit company falsely give credit to a person who fail to repay a debt.
+#The loss for the company would be huge.
 
 #evaluation method
 #as this is a classification problem, we calculate accuracy using confusion matrix.
 #however, as is shown in this baseline prediction, default rate is imbalanced. 
 #as well as accuracy, we will pay attention to specificity and balanced accuracy.
-#we will also evaluate models calculate probabilities and then calculate auc.
-#a model which produces the best accuracy and auc can be determined as the best model.
 
-#roc curve and auc explanation
-
-################################################################################
-
-######################################
-#logistic regression fewer predictors
-######################################
+#####################
+#logistic regression 
+#####################
 
 #as this is a classification, we use logistic regression. we use glm function
-#there is a possibility of multicolliearity
-#to find multicollinerity, we use "vif" function from "car"package
-#https://www.rdocumentation.org/packages/regclass/versions/1.6/topics/VIF
+#there are 24 predictors in the train_set. 
+#we use "step regression" to find the best logistic regression model.
+#stepwise regression explanation
 
-#to check multicollinerity, we pick up numeric predictors
-names(Filter(is.numeric, train_set))
+#a null model with no predictors
+null_model <- glm(DEFAULT~1, data = train_set, family = binomial(link = "logit"))
 
-#make numeric only model and check vif
-vif_mdl <- glm(DEFAULT ~LIMIT_BAL+ AGE + 
-                 BILL_AMT1 + BILL_AMT2 + BILL_AMT3 + BILL_AMT4 + BILL_AMT5 + BILL_AMT6 + 
-                 PAY_AMT1 + PAY_AMT2 + PAY_AMT3 + PAY_AMT4 + PAY_AMT5 + PAY_AMT6,  
-               data= train_set, family = binomial(link = "logit"))
-dat <-vif(vif_mdl)
+#q full model using all of the potential predictors
+full_model <- glm(DEFAULT~., data = train_set, family = binomial(link = "logit"))
 
-#finding values which are exceeding 10 
-dat[dat>10]
-
-#BILL_AMT1 BILL_AMT2 BILL_AMT3 BILL_AMT4 BILL_AMT5 BILL_AMT6, vif >10 
-#leave out these columns
-
-#make a model
-glm_vif_mdl <- glm(DEFAULT ~ LIMIT_BAL + SEX + EDUCATION + MARRIAGE + AGE +
-                     PAY_0 + PAY_2 + PAY_3 + PAY_4 + PAY_5 + PAY_6 + 
-                     PAY_AMT1 + PAY_AMT2 + PAY_AMT3 + PAY_AMT4 + PAY_AMT5 + PAY_AMT6,
-                   data = train_set, 
-                   family = binomial(link = "logit"))
+#forward and backward stepwise algorithm
+step_mdl   <- step(null_model, 
+                   scope = list(lower = null_model, upper = full_model), 
+                   direction = "both")
 
 #predict
-glm_vif_prob <- predict(glm_vif_mdl, validation_set,type="response")
-glm_vif_pred <- ifelse(glm_vif_prob >0.5,1,0)
+step_prob <- predict(step_mdl, validation_set,type="response")
+step_pred <- ifelse(step_prob >0.5,1,0)
 
 #to show accuracy we use confusionMatrix function in caret library
-confusionMatrix(as.factor(glm_vif_pred), validation_set$DEFAULT)#accept only factor
-
-#F1
+confusionMatrix(as.factor(step_pred), validation_set$DEFAULT)
 
 #make a table
 results <- tibble(method = "logistic regresion", 
-                  Accuracy =confusionMatrix(as.factor(glm_vif_pred), validation_set$DEFAULT)$overall[1],#Accuracy
-                  Sensitivity =confusionMatrix(as.factor(glm_vif_pred), validation_set$DEFAULT)$byClass[1],#Sensitivity
-                  Specificity =confusionMatrix(as.factor(glm_vif_pred), validation_set$DEFAULT)$byClass[2],#Specificity
-                  F1 = confusionMatrix(as.factor(glm_vif_pred), validation_set$DEFAULT)$byClass[7],#Balanced Accuracy
+                  Accuracy =confusionMatrix(as.factor(step_pred), validation_set$DEFAULT)$overall[1],#Accuracy
+                  Sensitivity =confusionMatrix(as.factor(step_pred), validation_set$DEFAULT)$byClass[1],#Sensitivity
+                  Specificity =confusionMatrix(as.factor(step_pred), validation_set$DEFAULT)$byClass[2],#Specificity
+                  Balanced_Accuracy =confusionMatrix(as.factor(step_pred), validation_set$DEFAULT)$byClass[11],#Balanced Accuracy
 )
 results %>% knitr::kable()
 
@@ -455,18 +428,15 @@ results %>% knitr::kable()
 #rpart ~ using default minsplit=20, cp=0.01
 
 set.seed(2021, sample.kind = "Rounding")
-rpart_mdl <-rpart(formula = DEFAULT ~ .,data = train_set)
+rpart_mdl <-rpart(DEFAULT ~ .,data = train_set)
 
 #prediction
 rpart_pred <- predict(rpart_mdl, validation_set, type="class")
 
-#probability
-rpart_prob <- predict(rpart_mdl, validation_set)
-
-confusionMatrix(as.factor(rpart_pred), validation_set$DEFAULT)
+#confusion Matrix
+confusionMatrix(rpart_pred, validation_set$DEFAULT)
 
 #draw decision tree rpart.plot is good function to show decision tree clearly.
-library(rpart.plot)
 rpart.plot(rpart_mdl)
 
 #find used features
@@ -477,10 +447,10 @@ rpart_mdl$variable.importance
 results <- bind_rows(
   results,
   tibble(method="CART default",  
-         Accuracy = confusionMatrix(as.factor(rpart_pred), validation_set$DEFAULT)$overall[1],#Accuracy
-         Sensitivity = confusionMatrix(as.factor(rpart_pred), validation_set$DEFAULT)$byClass[1],#Sensitivity
-         Specificity = confusionMatrix(as.factor(rpart_pred), validation_set$DEFAULT)$byClass[2],#Specificity
-         F1 = confusionMatrix(as.factor(rpart_pred), validation_set$DEFAULT)$byClass[7]) #Balanced accuracy
+         Accuracy = confusionMatrix(rpart_pred, validation_set$DEFAULT)$overall[1],#Accuracy
+         Sensitivity = confusionMatrix(rpart_pred, validation_set$DEFAULT)$byClass[1],#Sensitivity
+         Specificity = confusionMatrix(rpart_pred, validation_set$DEFAULT)$byClass[2],#Specificity
+         Balanced_Accuracy = confusionMatrix(rpart_pred, validation_set$DEFAULT)$byClass[11]) #Balanced accuracy
          )
 
 results %>% knitr::kable()
@@ -510,20 +480,16 @@ rpart.plot(rpart_tuned_mdl$finalModel)
 rpart_tuned_pred <- predict(rpart_tuned_mdl, validation_set)
 
 #confusion matrix
-confusionMatrix(as.factor(rpart_tuned_pred), validation_set$DEFAULT)
-
-#important features
-rpart_tuned_mdl %>% 
-  varImp() 
+confusionMatrix(rpart_tuned_pred, validation_set$DEFAULT)
 
 #make a table
 results <- bind_rows(
   results,
   tibble(method="CART tuned cp",  
-         Accuracy = confusionMatrix(as.factor(rpart_tuned_pred), validation_set$DEFAULT)$overall[1],#Accuracy
-         Sensitivity = confusionMatrix(as.factor(rpart_tuned_pred), validation_set$DEFAULT)$byClass[1],#Sensitivity
-         Specificity = confusionMatrix(as.factor(rpart_tuned_pred), validation_set$DEFAULT)$byClass[2],#Specificity
-         F1 = confusionMatrix(as.factor(rpart_tuned_pred), validation_set$DEFAULT)$byClass[7]) #Balanced accuracy
+         Accuracy = confusionMatrix(rpart_tuned_pred, validation_set$DEFAULT)$overall[1],#Accuracy
+         Sensitivity = confusionMatrix(rpart_tuned_pred, validation_set$DEFAULT)$byClass[1],#Sensitivity
+         Specificity = confusionMatrix(rpart_tuned_pred, validation_set$DEFAULT)$byClass[2],#Specificity
+         Balanced_Accuracy = confusionMatrix(rpart_tuned_pred, validation_set$DEFAULT)$byClass[11]) #Balanced accuracy
 )
 results %>% knitr::kable()
 ################################################################################
@@ -545,23 +511,16 @@ rf_mdl
 rf_pred <- predict(rf_mdl, validation_set)$predictions
 
 confusionMatrix(rf_pred, validation_set$DEFAULT)
-#Accuracy : 0.8192
-#Sensitivity : 0.9529       
-#Specificity : 0.3484
-#Balanced Accuracy : 0.6507
-
-rf_mdl %>% 
-  varImp() 
 
 #make a table
 
 results <- bind_rows(
   results,
   tibble(method="random forest default",  
-         Accuracy = confusionMatrix(as.factor(rf_pred), validation_set$DEFAULT)$overall[1],#Accuracy
-         Sensitivity = confusionMatrix(as.factor(rf_pred), validation_set$DEFAULT)$byClass[1],#Sensitivity
-         Specificity = confusionMatrix(as.factor(rf_pred), validation_set$DEFAULT)$byClass[2],#Specificity
-         F1 = confusionMatrix(as.factor(rf_pred), validation_set$DEFAULT)$byClass[7]) #Balanced accuracy
+         Accuracy = confusionMatrix(rf_pred, validation_set$DEFAULT)$overall[1],#Accuracy
+         Sensitivity = confusionMatrix(rf_pred, validation_set$DEFAULT)$byClass[1],#Sensitivity
+         Specificity = confusionMatrix(rf_pred, validation_set$DEFAULT)$byClass[2],#Specificity
+         Balanced_Accuracy = confusionMatrix(rf_pred, validation_set$DEFAULT)$byClass[11]) #Balanced accuracy
          )
 
 results %>% knitr::kable()
@@ -590,36 +549,48 @@ rf_cv_pred <- predict(rf_cv_mdl, validation_set)
 
 #confusion Matrix
 confusionMatrix(rf_cv_pred, validation_set$DEFAULT)
-#Accuracy : 0.8136  
-#Sensitivity : 0.9601
-#Specificity : 0.2976
-#Balanced Accuracy : 0.6289
 
 #make a table
-
 results <- bind_rows(
   results,
   tibble(method="random forest tuned ",  
          Accuracy = confusionMatrix(rf_cv_pred, validation_set$DEFAULT)$overall[1],#Accuracy
          Sensitivity = confusionMatrix(rf_cv_pred, validation_set$DEFAULT)$byClass[1],#Sensitivity
          Specificity = confusionMatrix(rf_cv_pred, validation_set$DEFAULT)$byClass[2],#Specificity
-         F1= confusionMatrix(rf_cv_pred, validation_set$DEFAULT)$byClass[7])
+         Balanced_Accuracy= confusionMatrix(rf_cv_pred, validation_set$DEFAULT)$byClass[11])
   )
-
 
 results %>% knitr::kable()
 
 ################################################################################
 #evaluation
 ################################################################################
-final_pred <- predict(rf_cv_mdl, test_set)
-confusionMatrix(final_pred, test_set$DEFAULT)
 
-final_results <- tibble( 
-                  Accuracy =confusionMatrix(final_pred, test_set$DEFAULT)$overall[1],#Accuracy
-                  Sensitivity =confusionMatrix(final_pred, test_set$DEFAULT)$byClass[1],#Sensitivity
-                  Specificity =confusionMatrix(final_pred, test_set$DEFAULT)$byClass[2],#Specificity
-                  F1 = confusionMatrix(final_pred, test_set$DEFAULT)$byClass[7])#Balanced Accuracy
+#best performance in terms of balanced accuracy is "random forest default model"
+#best performance in terms of accuracy is "CART default model"
 
+final_pred_rpart <- predict(rpart_mdl, test_set,type="class")
+confusionMatrix(final_pred_rpart, test_set$DEFAULT)
+
+n_final_pred_rf <-predict(rf_mdl, test_set)$predictions
+confusionMatrix(n_final_pred_rf, test_set$DEFAULT)$byClass
+
+final_pred_rf <- predict(rf_cv_mdl, test_set)
+confusionMatrix(final_pred_rf, test_set$DEFAULT)
+
+final_results <- tibble( method ="CART default",
+                         Accuracy =confusionMatrix(final_pred_rpart, test_set$DEFAULT)$overall[1],
+                         Sensitivity =confusionMatrix(final_pred_rpart, test_set$DEFAULT)$byClass[1],
+                         Specificity =confusionMatrix(final_pred_rpart, test_set$DEFAULT)$byClass[2],
+                         Balanced_Accuracy = confusionMatrix(final_pred_rpart, test_set$DEFAULT)$byClass[11]
+)
+
+final_results <-  bind_rows( final_results, 
+                             tibble( method ="Random forest default",
+                             Accuracy =confusionMatrix(final_pred, test_set$DEFAULT)$overall[1],#Accuracy
+                             Sensitivity =confusionMatrix(final_pred, test_set$DEFAULT)$byClass[1],#Sensitivity
+                             Specificity =confusionMatrix(final_pred, test_set$DEFAULT)$byClass[2],#Specificity
+                             Balanced_Accuracy = confusionMatrix(final_pred, test_set$DEFAULT)$byClass[11])#Balanced Accuracy
+)
 final_results %>% knitr::kable()
-
+###

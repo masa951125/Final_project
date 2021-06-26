@@ -109,44 +109,24 @@ null_model <- glm(DEFAULT~1, data = train_set, family = binomial(link = "logit")
 #q full model using all of the potential predictors
 full_model <- glm(DEFAULT~., data = train_set, family = binomial(link = "logit"))
 
-#forward stepwise algorithm
-step_mdl_f   <- step(null_model, 
+#forward and backward stepwise algorithm
+step_mdl   <- step(null_model, 
                      scope = list(lower = null_model, upper = full_model), 
-                     direction = "forward")
+                     direction = "both")
 
-step_prob_f <- predict(step_mdl_f, test_set,type="response")
-step_pred_f <- ifelse(step_prob_f >0.5,1,0)
-confusionMatrix(as.factor(step_pred_f), test_set$DEFAULT)
-#Accuracy : 0.825
-#Sensitivity : 0.9572
-#Specificity : 0.3599
-#Balanced Accuracy : 0.6586
-
-#ROC
-step_roc_f <- roc(test_set$DEFAULT, step_prob_f)
-plot(step_roc_f, col = "red")
-step_roc_f$auc
-#Area under the curve: 0.7734
+step_prob <- predict(step_mdl_f, validation_set,type="response")
+step_pred <- ifelse(step_prob_f >0.5,1,0)
+confusionMatrix(as.factor(step_pred), validation_set$DEFAULT)
 
 #backward
 step_mdl_b   <- step(full_model, 
                      scope = list(lower = null_model, upper = full_model), 
                      direction = "backward")
 
-step_prob_b <- predict(step_mdl_b, test_set,type="response")
+step_prob_b <- predict(step_mdl_b, validation_set,type="response")
 step_pred_b <- ifelse(step_prob_b >0.5,1,0)
 
-confusionMatrix(as.factor(step_pred_b), test_set$DEFAULT)
-#Accuracy : 0.825
-#Sensitivity : 0.9572
-#Specificity : 0.3599
-#Balanced Accuracy : 0.6586
-
-#ROC
-step_roc_b <- roc(test_set$DEFAULT,step_prob_b)
-plot(step_roc_b, col = "red")
-step_roc_b$auc
-#Area under the curve: 0.7734
+confusionMatrix(as.factor(step_pred_b), validation_set$DEFAULT)
 
 summary(step_mdl_b)
 summary(step_mdl_f)
@@ -157,6 +137,47 @@ summary(step_mdl_f)
 #LIMIT_BAL, SEX, EDUCATION, MARRIAGE, 
 #PAY_0, PAY_3, PAY_4, PAY_5, PAY_6, BILL_AMT3, BILL_AMT5
 #PAY_AMT1, PAY_AMT2, PAY_AMT5,  PAY_AMT6
+
+#there is a possibility of multicolliearity
+#to find multicollinerity, we use "vif" function from "car"package
+#https://www.rdocumentation.org/packages/regclass/versions/1.6/topics/VIF
+
+
+if(!require(car)) install.packages("car") #VIF variation inflation factor 
+#to check multicollinerity, we pick up numeric predictors
+names(Filter(is.numeric, train_set))
+
+#make numeric only model and check vif
+vif_mdl <- glm(DEFAULT ~LIMIT_BAL+ AGE + 
+                 BILL_AMT1 + BILL_AMT2 + BILL_AMT3 + BILL_AMT4 + BILL_AMT5 + BILL_AMT6 + 
+                 PAY_AMT1 + PAY_AMT2 + PAY_AMT3 + PAY_AMT4 + PAY_AMT5 + PAY_AMT6,  
+               data= train_set, family = binomial(link = "logit"))
+dat <-vif(vif_mdl)
+
+#finding values which are exceeding 10 
+dat[dat>10]
+
+#BILL_AMT1 BILL_AMT2 BILL_AMT3 BILL_AMT4 BILL_AMT5 BILL_AMT6, vif >10 
+#leave out these columns
+
+#make a model
+glm_vif_mdl <- glm(DEFAULT ~ LIMIT_BAL + SEX + EDUCATION + MARRIAGE + AGE +
+                     PAY_0 + PAY_2 + PAY_3 + PAY_4 + PAY_5 + PAY_6 + 
+                     PAY_AMT1 + PAY_AMT2 + PAY_AMT3 + PAY_AMT4 + PAY_AMT5 + PAY_AMT6,
+                   data = train_set, 
+                   family = binomial(link = "logit"))
+
+#predict
+glm_vif_prob <- predict(glm_vif_mdl, validation_set,type="response")
+glm_vif_pred <- ifelse(glm_vif_prob >0.5,1,0)
+
+#to show accuracy we use confusionMatrix function in caret library
+confusionMatrix(as.factor(glm_vif_pred), validation_set$DEFAULT) #accept only factor
+
+
+
+
+
 
 ################################################################################
 #parallel
@@ -633,3 +654,14 @@ results <- bind_rows(
 results %>% knitr::kable()
 
 ###############################################################################
+
+t_rpart_pred <- predict(rpart_mdl, test_set, type="class")
+
+confusionMatrix(t_rpart_pred, test_set$DEFAULT)$byClass[7]
+
+class(rpart_pred)
+
+t_rpart_tuned_pred <- predict(rpart_tuned_mdl, test_set)
+confusionMatrix(t_rpart_tuned_pred, test_set$DEFAULT)$byClass[7]
+
+
