@@ -15,9 +15,9 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 ## Introduction
 
-Finance thought to be a field where machine learning can be effective.
+Finance thought to be a field where machine learning can be effective. It is surrounded by uncertainties, such as economic downturn, a collapse of markets. Individuals are no exception, we are not sure that a person is credible enough to lend money. They might be a deadbeat, or struggle in a significant debt, even though they look credible. This is the reason why machine learning plays a role in predicting uncertain future.
 
-We are not sure that a person is credible enough to lend money. They might be a deadbeat, or struggle in a significant debt, even though they look credible. Traditionally, finding a credible borrower have been a skill and experience nurtured by financial institutions, like banks, credit company. But today's complex economical situation does not
+Traditionally, finding a credible borrower have been a skill and experience nurtured by financial institutions, like banks, credit company. But today's complex economical situation does not
 
 For some security and privacy reason, we do not know actual systems introduced in financial institutions,
 
@@ -59,11 +59,13 @@ if(!require(ranger)) install.packages("ranger")
 #random forest
 ```
 
-We use a dataset stored in Kaggle.[^7]
+We use a dataset stored in Kaggle[^7]website. In the description, it says, "This dataset contains information on default payments, demographic factors, credit data, history of payment, and bill statements of credit card clients in Taiwan from April 2005 to September 2005." It is CSV file.
 
 [^7]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
-Data is stored in my GitHub repository. We will use the direct link from my GitHub repository.
+Kaggle requires registration to download the data. For the sake of convenience, the data file is stored in my GitHub repository[^8].
+
+[^8]: <https://github.com/masa951125/Final_project/raw/main/UCI_Credit_Card.csv>
 
 ```{r Downloading dataset, include=FALSE}
 
@@ -74,23 +76,49 @@ original_default <- read_csv("original_default.csv")
 
 ## Data Exploration
 
-First, we need to check the downloaded dataset.
+First, we need to check the downloaded dataset. It has 30000 rows and 25 columns. First six rows are like these.
 
-```{r Data exploration (str, summary), echo=FALSE}
+```{r original_default dimention, include=FALSE}
+dim(original_default)
+```
+
+```{r FIrst 6 rows of the data, echo=FALSE}
+head(original_default)
+
+```
+
+We look into it further using "str" and "summary" function.
+
+```{r Data exploration (str), echo=FALSE, summary), echo=FALSE}
 str(original_default)
 ```
 
-```{r}
+```{r echo=FALSE}
 summary(original_default)
 ```
 
-No NAs.
+```{r}
+names(original_default)
 
-Correlation.
+```
+
+"Default.payment.next.month" is an outcome of the dataset which has values of 0 and 1. Other features seem to be either numerical or categorical data. "SEX", "EDUCATION", "MARRIAGE" and "PAY_0" -"PAY_6" look like categorical data, as their values are limited number of integers. Other features seem to be numerical. From checking its summary, we understand there are no NAs in the dataset.
+
+How these predictors are correlated? We use "plot_correlation" function to investigate this.
 
 ```{r}
-plot_correlation(original_default)
+plot_correlation(original_default) +theme(axis.text=element_text(size=6))+coord_fixed(ratio = 0.8)
 ```
+
+Takeaways from this are;
+
+1.  Outcome (default.payment.next.month) has a strong positive correlation with PAY.
+2.  Overall, LIMIT_BAL has a relatively strong correlation with other factors (except SEX).
+3.  EDUCATION, MARRIAGE, AGE have relatively strong correlation with one another.
+4.  EDUCATION and AGE have a relatively weak correlation with PAY and BILL_AMT respectively.
+5.  PAY and BILL_AMT, BILL_AMT and PAY_AMT have strong correlation.
+
+Then, we will look into these features further.
 
 ### 1 Outcome
 
