@@ -3,34 +3,51 @@
 ###########################
 #tidyverse, gridExtra, caret, rpart, DataExplorer, rager
 
-if(!require(tidyverse)) install.packages("tidyverse") #basic library
-if(!require(gridExtra)) install.packages("gridExtra") #expansion of ggplot
-if(!require(caret)) install.packages("caret") #cross validation 
-if(!require(rpart)) install.packages("rpart") #to make decision tree model
-if(!require(rpart.plot)) install.packages("rpart.plot") #to plot decision tree
-if(!require(DataExplorer)) install.packages("DataExplorer") #to do data exploration
-if(!require(ranger)) install.packages("ranger") #random forest
+if(!require(tidyverse)) install.packages("tidyverse") 
+#basic library
+if(!require(gridExtra)) install.packages("gridExtra") 
+#expansion of ggplot
+if(!require(caret)) install.packages("caret") 
+#cross validation 
+if(!require(rpart)) install.packages("rpart") 
+#to make decision tree model
+if(!require(rpart.plot)) install.packages("rpart.plot") 
+#to plot decision tree
+if(!require(DataExplorer)) install.packages("DataExplorer") 
+#to do data exploration
+if(!require(ranger)) install.packages("ranger") 
+#random forest. new package that is much faster than "randomForest" package
 
 ######
 #data
 ######
-#data is stored in my GitHub repository. We will use the direct link.
+#data is stored in my GitHub repository.
 
 url <-"https://github.com/masa951125/Final_project/raw/main/UCI_Credit_Card.csv"
+#my GitHub direct link to the file
+
 download.file(url, "original_default.csv")
+#downloading a file into your working folder.
+
 original_default <- read_csv("original_default.csv")
+#using "read_csv" to download the file. 
+#we will get the dataset whose values are numerical.
 
 ################################################################################
 #data exploration
 ################################################################################
 
 #check dataset
+dim(original_default)
+head(original_default)
 str(original_default)
 summary(original_default)
 #no NAs
 
 #correlation
-plot_correlation(original_default)
+plot_correlation(original_default)+
+  theme(axis.text=element_text(size=6))+ #change the sizes of texts in x axis and y axis
+  coord_fixed(ratio = 0.8) #change the aspect ratio of the graph
 # DEFAULT has relatively strong correlations in terms of PAY, and PAY_AMT 
 
 ###########
