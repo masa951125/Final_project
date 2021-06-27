@@ -54,10 +54,8 @@ plot_correlation(original_default)+
 #1 outcome
 ###########
 
-summary(original_default$default.payment.next.month)
-#the data explanation says;
-#https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset
-#0:non-default, 1:default
+#show distribution graph
+ggplot(data=original_default, aes(default.payment.next.month)) +geom_bar()
 
 #change name of "default.payment.next.month"
 n <-which(names(original_default)=="default.payment.next.month")
@@ -68,12 +66,9 @@ ggplot(data=original_default, aes(default.payment.next.month)) +geom_bar()
 
 #show proportion of 0,1
 prop.table(table(original_default$default.payment.next.month))
-#0      1 
-#0.7788 0.2212 
 
 #change outcome into factor
 original_default$DEFAULT <- as.factor(original_default$DEFAULT)
-
 
 #############
 #2 LIMIT_BAL
@@ -82,27 +77,23 @@ original_default$DEFAULT <- as.factor(original_default$DEFAULT)
 summary(original_default$LIMIT_BAL)
 #numeric data
 
-ggplot(data=original_default, aes(LIMIT_BAL, fill=DEFAULT)) +geom_histogram()
+ggplot(data=original_default, aes(LIMIT_BAL, fill=DEFAULT)) +geom_histogram(bins=30))
 #distribution is skewed right
 
+unique(original_default$LIMIT_BAL)
 #######
 #2 SEX
 #######
 
-summary(original_default$SEX)
-unique(original_default$SEX)
-#categorical data
+prop.table(table(original_default$SEX))
 
-#to make a plot, introducing new character vector
-gender <- ifelse(original_default$SEX == 1, "male", "female")
-
-original_default %>% ggplot(aes(x=gender, fill= DEFAULT)) +
+original_default %>% ggplot(aes(x=SEX, fill= DEFAULT)) +
   geom_bar() +
   ggtitle("SEX")+
   stat_count(aes(label = ..count..), geom = "label")# illustrate numbers
 
 #stacked bar graph
-original_default %>% ggplot(aes(x=gender, fill= DEFAULT)) +
+original_default %>% ggplot(aes(x= SEX, fill= DEFAULT)) +
   geom_bar(position="fill") +
   ggtitle("SEX")
 #There seemed to be little difference between genders.
@@ -110,21 +101,6 @@ original_default %>% ggplot(aes(x=gender, fill= DEFAULT)) +
 #############
 #3 EDUCATION
 #############
-
-summary(original_default$EDUCATION)
-unique(original_default$EDUCATION)
-#categorical data
-
-#the data explanation says;
-#https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset
-#1=graduate school, 2=university, 3=high school, 4=others, 5=unknown, 6=unknown
-#[1] 2 1 3 5 4 6 0
-#O is not defined. 0,5 and 6 can be included into 4 
-
-original_default$EDUCATION <- ifelse(original_default$EDUCATION== 0|
-                                       original_default$EDUCATION == 5|
-                                       original_default$EDUCATION == 6, 4,
-                                     original_default$EDUCATION)
 
 original_default %>% ggplot(aes(x=as.factor(EDUCATION), fill= DEFAULT)) +
   geom_bar() +
@@ -136,8 +112,6 @@ original_default %>% ggplot(aes(x=as.factor(EDUCATION), fill= DEFAULT)) +
   geom_bar(position="fill") +
   ggtitle("EDUCATION")
   
-# 4 is the smallest in terms of default rate. but its numbers are very small.
-
 ############
 #4 marriage
 ############

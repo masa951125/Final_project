@@ -15,15 +15,24 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 ## Introduction
 
-Finance thought to be a field where machine learning can be effective. It is surrounded by uncertainties, such as economic downturn, a collapse of markets. Individuals are no exception, we are not sure that a person is credible enough to lend money. They might be a deadbeat, or struggle in a significant debt, even though they look credible. This is the reason why machine learning plays a role in predicting uncertain future.
+Finance thought to be a field where machine learning can be effective. It is surrounded by uncertainties, such as economic downturn, a collapse of markets. Individuals are no exception, we are not sure that a person is credible enough to lend money. They might be a deadbeat, or struggle in a significant debt, even though they look credible. This is the reason why machine learning plays a role in predicting uncertain economic future.
 
-Traditionally, finding a credible borrower have been a skill and experience nurtured by financial institutions, like banks, credit company. But today's complex economical situation does not
+In this paper, we will deal with a familiar problem. Based on objective data, can we predict effectively whether a credit user will pay their debt or result in default? Traditionally, finding a credible borrower have been a skill and experience nurtured by financial institutions, like banks, credit company. Instead, we will look into open data, and using machine learning models, such as logistic regression, decision tree, and random forest. We will fit the data with these models and find the model which will show the most accurate prediction.
 
-For some security and privacy reason, we do not know actual systems introduced in financial institutions,
+The dataset we use, "Default of Credit Card Clients Dataset" is stored in Kaggle website. It was collected in Taiwan in 2005. It has 24 variables, such as age, education, and payment condition. Outcome has two results, "0" non-default, "1" default.
+
+Our goal is to find a classification model which predicts the most accurate outcome. However, its distribution of outcome is imbalanced. Namely, the number of default clients are small compared to non- default clients. To address the issue, we will use other criteria, balanced accuracy.
+
+We will use three machine learning models, logistic regression, decision tree, and random forest. If necessary, we will tune their parameters to find the best solution. Overall procedures are as follows :
+
+1.  Data exploration and data cleansing
+2.  Splitting the dataset into train_set, validation_set, and test_set
+3.  Applying models, logistic regression, decision tree, and random forest
+4.  Considering models performance, and evaluating
 
 This paper is written as a final assignment in "HarvardX PH125.9x Data Science: Capstone."
 
-## Dataset
+## Packages and Dataset
 
 In this paper, we use R packages, "tidyverse[^1]", "DataExplorer[^2]", "gridExtra[^3]", "rpart[^4]", "caret[^5]", and "ranger[^6]".
 
@@ -89,7 +98,7 @@ head(original_default)
 
 We look into it further using "str" and "summary" function.
 
-```{r Data exploration (str), echo=FALSE, summary), echo=FALSE}
+```{r Data exploration (str), echo=FALSE, echo=FALSE}
 str(original_default)
 ```
 
@@ -97,16 +106,11 @@ str(original_default)
 summary(original_default)
 ```
 
-```{r}
-names(original_default)
-
-```
-
 "Default.payment.next.month" is an outcome of the dataset which has values of 0 and 1. Other features seem to be either numerical or categorical data. "SEX", "EDUCATION", "MARRIAGE" and "PAY_0" -"PAY_6" look like categorical data, as their values are limited number of integers. Other features seem to be numerical. From checking its summary, we understand there are no NAs in the dataset.
 
 How these predictors are correlated? We use "plot_correlation" function to investigate this.
 
-```{r}
+```{r echo=FALSE}
 plot_correlation(original_default) +theme(axis.text=element_text(size=6))+coord_fixed(ratio = 0.8)
 ```
 
@@ -122,116 +126,83 @@ Then, we will look into these features further.
 
 ### 1 Outcome
 
-[Kaggle's data explanation says](https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset)
+First, we look into the outcome, "default.payment.next.month". The data description says, "Default payment, 1=yes, 0=no.[^9]" We draw a distribution graph.
 
-Default payment, 1=yes, 0=no
+[^9]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
-```{r}
-summary(original_default$default.payment.next.month)
-```
-
-Show distribution graph.
-
-```{r}
+```{r outcome graph, echo=FALSE}
 ggplot(data=original_default, aes(default.payment.next.month)) +geom_bar()
 ```
 
-Show proportion of 0,1
+This variable is unevenly distributed. Then we see the proportion of "0","1".
 
-```{r}
+```{r echo=FALSE}
 prop.table(table(original_default$default.payment.next.month))
 ```
 
-Change name of "default.payment.next.month"
+This means that if we predict all the outcome as "0", we will get 77.9% accuracy. We need to take into account this fact. We change the name, "default.payment.next.month", to"DEFAULT" for the sake of convenience. Also, we change this numeric variable into factor.
 
-```{r}
+```{r include=FALSE}
 n <-which(names(original_default)=="default.payment.next.month")
 names(original_default)[n] <- "DEFAULT"
 ```
 
-Change outcome into factor
-
-```{r}
+```{r include=FALSE}
 original_default$DEFAULT <- as.factor(original_default$DEFAULT)
 ```
 
 ### 2 "LIMIT_BAL"
 
-[Kaggle's data explanation says](https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset)
+This is an "amount of given credit in NT dollars (includes individual and family/supplementary credit)[^10]" It is clearly numeric data.
 
-Amount of given credit in NT dollars (includes individual and family/supplementary credit
+[^10]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset> NT stands for "New Taiwan".
 
-```{r}
+```{r echo=FALSE}
 summary(original_default$LIMIT_BAL)
 ```
 
-numeric data
+We draw its distribution filling the proportion of default.
 
-```{r}
-ggplot(data=original_default, aes(LIMIT_BAL, fill=DEFAULT)) +geom_histogram()
+```{r LIMIT_BAL graph, echo=FALSE}
+ggplot(data=original_default, aes(LIMIT_BAL, fill=DEFAULT), ) +geom_histogram(bins=50)
 ```
 
-Distribution is skewed right
+Distribution is skewed right. Default clients seem to be gathered around lower range of LIMIT_BAL values.
 
 ### 3 "SEX"
 
-[Kaggle's data explanation says](https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset)
+The values "1", "2" correspond to male and female respectively[^11]. Male is 40% and female is 60%.
 
-1=male, 2=female
+[^11]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
-```{r}
-summary(original_default$SEX)
-unique(original_default$SEX)
+```{r echo=FALSE}
+prop.table(table(original_default$SEX))
 ```
 
-categorical data. to make a plot, introducing new character vector.
+We draw its distribution and proportion in terms of default rates.
 
-```{r}
-gender <- ifelse(original_default$SEX == 1, "male", "female")
-```
-
-```{r}
-original_default %>% ggplot(aes(x=gender, fill= DEFAULT)) +
+```{r SEX distribution, echo=FALSE}
+original_default %>% ggplot(aes(x=SEX, fill= DEFAULT)) +
   geom_bar() +
   ggtitle("SEX")+
   stat_count(aes(label = ..count..), geom = "label")# illustrate numbers
 ```
 
-To make stacked bar graph.
-
-```{r}
-original_default %>% ggplot(aes(x=gender, fill= DEFAULT)) +
+```{r SEX stacked bar graph, echo=FALSE}
+original_default %>% ggplot(aes(x=SEX, fill= DEFAULT)) +
   geom_bar(position="fill") +
   ggtitle("SEX")
 ```
 
-There seemed to be little difference between genders.
+There seemed to be little difference between genders. This categorical variable is somewhat irrelevant to the outcome.
 
 ### 4 "EDUCATION"
 
-[Kaggle's data explanation says](https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset);
+In this variable, values are "1", "2", "3", "4", "5", "6". They are categorical values. The numbers have meanings as follows ; 1=graduate school, 2=university, 3=high school, 4=others, 5=unknown, 6=unknown[^12]. We plot its distribution.
 
-1=graduate school, 2=university, 3=high school, 4=others, 5=unknown, 6=unknown
+[^12]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
-```{r}
-summary(original_default$EDUCATION)
-unique(original_default$EDUCATION)
-```
-
-categorical data.
-
-0 is not defined. 0,5 and 6 can be included into 4
-
-```{r}
-original_default$EDUCATION <- ifelse( original_default$EDUCATION== 0|
-                                      original_default$EDUCATION == 5|
-                                      original_default$EDUCATION == 6, 4,
-                                      original_default$EDUCATION)
-```
-
-Plot.
-
-```{r}
+```{r EDUCATION distribution, echo=FALSE}
 original_default %>% ggplot(aes(x=as.factor(EDUCATION), fill= DEFAULT)) +
   geom_bar() +
   ggtitle("EDUCATION")+
@@ -240,15 +211,15 @@ original_default %>% ggplot(aes(x=as.factor(EDUCATION), fill= DEFAULT)) +
 
 Stacked bar graph.
 
-```{r}
+```{r EDUCATION stacked bar graph, echo=FALSE}
 original_default %>% ggplot(aes(x=as.factor(EDUCATION), fill= DEFAULT)) +
   geom_bar(position="fill") +
   ggtitle("EDUCATION")
 ```
 
-4 is the smallest in terms of default rate. but its numbers are very small.
+People whose final education is high school have relatively high default rate. On the other hand, people whose final education is graduate school have low default rate.
 
-### 5 "MARRIAGE"
+###  5 "MARRIAGE"
 
 [Kaggle's data explanation says](https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset);
 
