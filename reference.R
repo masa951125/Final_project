@@ -664,4 +664,8 @@ class(rpart_pred)
 t_rpart_tuned_pred <- predict(rpart_tuned_mdl, test_set)
 confusionMatrix(t_rpart_tuned_pred, test_set$DEFAULT)$byClass[7]
 
+n_rf_cv_pred <- predict(rf_cv_mdl, test_set)
+
+#confusion Matrix
+confusionMatrix(n_rf_cv_pred, test_set$DEFAULT)
 

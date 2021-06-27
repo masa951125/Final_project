@@ -1,7 +1,7 @@
 ###########################
 #package used in this code
 ###########################
-#tidyverse, gridExtra, caret, rpart, pROC, DataExplorer, rager, car
+#tidyverse, gridExtra, caret, rpart, DataExplorer, rager
 
 if(!require(tidyverse)) install.packages("tidyverse") #basic library
 if(!require(gridExtra)) install.packages("gridExtra") #expansion of ggplot
@@ -174,70 +174,61 @@ unique(original_default$PAY_0)
 #2=payment delay for two months, … 8=payment delay for eight months, 
 #9=payment delay for nine months and above)
 
-original_default %>% ggplot(aes(x=as.factor(PAY_0), fill= DEFAULT)) +
+graph_p0 <-
+  original_default %>% ggplot(aes(x=as.factor(PAY_0), fill= DEFAULT)) +
   geom_bar() +
   ggtitle("PAY_0")+
   stat_count(aes(label = ..count..), geom = "label")# illustrate numbers
+graph_p0
 
 #stack bar graph PAY_0
-graph_P0 <-original_default %>% ggplot(aes(x=as.factor(PAY_0), fill= DEFAULT)) +
+original_default %>% ggplot(aes(x=as.factor(PAY_0), fill= DEFAULT)) +
   geom_bar(position="fill") +
   ggtitle("PAY_0")
 
 #PAY_2 ~ PAY_6 's structures are almost as same as PAY_0
-#PAY_2
-original_default %>% ggplot(aes(x=as.factor(PAY_2), fill= DEFAULT)) +
-  geom_bar() +
-  ggtitle("PAY_2P")+
-  stat_count(aes(label = ..count..), geom = "label")
 
-graph_P2 <-original_default %>% ggplot(aes(x=as.factor(PAY_2), fill= DEFAULT)) +
-  geom_bar(position="fill") +
+#PAY_0
+graph_p0 <-
+  original_default %>% ggplot(aes(x=as.factor(PAY_0), fill= DEFAULT)) +
+  geom_bar() +
+  ggtitle("PAY_0")
+
+#PAY_2
+graph_p2 <-  
+  original_default %>% ggplot(aes(x=as.factor(PAY_2), fill= DEFAULT)) +
+  geom_bar() +
   ggtitle("PAY_2")
 
-#stack bar graph PAY_3
-original_default %>% ggplot(aes(x=as.factor(PAY_3), fill= DEFAULT)) +
-  geom_bar() +
-  ggtitle("PAY_3")+
-  stat_count(aes(label = ..count..), geom = "label")
 
-graph_P3 <-original_default %>% ggplot(aes(x=as.factor(PAY_3), fill= DEFAULT)) +
-  geom_bar(position="fill") +
+#PAY_3
+graph_p3 <-  
+  original_default %>% ggplot(aes(x=as.factor(PAY_3), fill= DEFAULT)) +
+  geom_bar() +
   ggtitle("PAY_3")
 
-#stack bar graph PAY_4
+
+#PAY_4
+graph_p4 <-
 original_default %>% ggplot(aes(x=as.factor(PAY_4), fill= DEFAULT)) +
   geom_bar() +
-  ggtitle("PAY_4")+
-  stat_count(aes(label = ..count..), geom = "label")
-
-graph_P4 <-original_default %>% ggplot(aes(x=as.factor(PAY_4), fill= DEFAULT)) +
-  geom_bar(position="fill") +
   ggtitle("PAY_4")
- 
 
-#stack bar graph PAY_5
-original_default %>% ggplot(aes(x=as.factor(PAY_5), fill= DEFAULT)) +
-  geom_bar() +
-  ggtitle("PAY_5")+
-  stat_count(aes(label = ..count..), geom = "label")
-
-graph_P5 <-original_default %>% ggplot(aes(x=as.factor(PAY_5), fill= DEFAULT)) +
-  geom_bar(position="fill") +
+#PAY_5
+graph_p5 <-
+  original_default %>% ggplot(aes(x=as.factor(PAY_5), fill= DEFAULT)) +
+  geom_bar() 
   ggtitle("PAY_5")
 
-#stack bar graph PAY_6
-original_default %>% ggplot(aes(x=as.factor(PAY_6), fill= DEFAULT)) +
+#PAY_6
+graph_p6 <-
+  original_default %>% ggplot(aes(x=as.factor(PAY_6), fill= DEFAULT)) +
   geom_bar() +
-  ggtitle("PAY_6")+
-  stat_count(aes(label = ..count..), geom = "label")
-
-graph_P6 <-original_default %>% ggplot(aes(x=as.factor(PAY_6), fill= DEFAULT)) +
-  geom_bar(position="fill") +
   ggtitle("PAY_6")
 
+
 #to show graph side by side, we use "grid.arrange" function in "gridExtra" package
-grid.arrange(graph_P0, graph_P2, graph_P3, graph_P4, graph_P5, graph_P6, nrow=2, ncol=3)
+grid.arrange(graph_p0, graph_p2, graph_p3, graph_p4, graph_p5, graph_p6, nrow=2, ncol=3)
 
 ############
 #7 BILL_AMT
@@ -250,18 +241,17 @@ summary(original_default$BILL_AMT1)
 #https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset
 #Amount of bill statement in September, 2005 (NT dollar)
 
+#Plot BILL_AMT1
+ggplot(data=original_default, aes(BILL_AMT1,fill= DEFAULT)) +geom_histogram()
+
 #BILL_AMT1 ~ BILL_AMT6 's structures are almost the same
 
-str(original_default$BILL_AMT1)
-mean(original_default$BILL_AMT6)
-sd(original_default$BILL_AMT6)
-
-b1 <- ggplot(data=original_default, aes(BILL_AMT1,fill= DEFAULT)) +geom_histogram()
-b2 <- ggplot(data=original_default, aes(BILL_AMT2,fill= DEFAULT)) +geom_histogram()
-b3 <- ggplot(data=original_default, aes(BILL_AMT3,fill= DEFAULT)) +geom_histogram()
-b4 <- ggplot(data=original_default, aes(BILL_AMT4,fill= DEFAULT)) +geom_histogram()
-b5 <- ggplot(data=original_default, aes(BILL_AMT5,fill= DEFAULT)) +geom_histogram()
-b6 <- ggplot(data=original_default, aes(BILL_AMT6,fill= DEFAULT)) +geom_histogram()
+b1 <- ggplot(data=original_default, aes(BILL_AMT1)) +geom_histogram()
+b2 <- ggplot(data=original_default, aes(BILL_AMT2)) +geom_histogram()
+b3 <- ggplot(data=original_default, aes(BILL_AMT3)) +geom_histogram()
+b4 <- ggplot(data=original_default, aes(BILL_AMT4)) +geom_histogram()
+b5 <- ggplot(data=original_default, aes(BILL_AMT5)) +geom_histogram()
+b6 <- ggplot(data=original_default, aes(BILL_AMT6)) +geom_histogram()
 
 grid.arrange(b1,b2,b3,b4,b5,b6, nrow=2, ncol=3)
 #they show almost similar distribution
@@ -277,13 +267,15 @@ summary(original_default$PAY_AMT1)
 #https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset
 #Amount of previous payment in September, 2005 (NT dollar)
 
-str(original_default$PAY_AMT1)
-p1 <- ggplot(data=original_default, aes(PAY_AMT1,fill= DEFAULT)) +geom_histogram()
-p2 <- ggplot(data=original_default, aes(PAY_AMT2,fill= DEFAULT)) +geom_histogram()
-p3 <- ggplot(data=original_default, aes(PAY_AMT3,fill= DEFAULT)) +geom_histogram()
-p4 <- ggplot(data=original_default, aes(PAY_AMT4,fill= DEFAULT)) +geom_histogram()
-p5 <- ggplot(data=original_default, aes(PAY_AMT5,fill= DEFAULT)) +geom_histogram()
-p6 <- ggplot(data=original_default, aes(PAY_AMT6,fill= DEFAULT)) +geom_histogram()
+#plot PAY_AMT1
+ggplot(data=original_default, aes(PAY_AMT1,fill= DEFAULT)) +geom_histogram()
+
+p1 <- ggplot(data=original_default, aes(PAY_AMT1)) +geom_histogram()
+p2 <- ggplot(data=original_default, aes(PAY_AMT2)) +geom_histogram()
+p3 <- ggplot(data=original_default, aes(PAY_AMT3)) +geom_histogram()
+p4 <- ggplot(data=original_default, aes(PAY_AMT4)) +geom_histogram()
+p5 <- ggplot(data=original_default, aes(PAY_AMT5)) +geom_histogram()
+p6 <- ggplot(data=original_default, aes(PAY_AMT6)) +geom_histogram()
 
 grid.arrange(p1,p2,p3,p4,p5,p6, nrow=2, ncol=3)
 #they show almost similar distribution
@@ -572,11 +564,10 @@ results %>% knitr::kable()
 final_pred_rpart <- predict(rpart_mdl, test_set,type="class")
 confusionMatrix(final_pred_rpart, test_set$DEFAULT)
 
-n_final_pred_rf <-predict(rf_mdl, test_set)$predictions
-confusionMatrix(n_final_pred_rf, test_set$DEFAULT)$byClass
+final_pred_rf <-predict(rf_mdl, test_set)$predictions
+confusionMatrix(final_pred_rf, test_set$DEFAULT)$byClass
 
-final_pred_rf <- predict(rf_cv_mdl, test_set)
-confusionMatrix(final_pred_rf, test_set$DEFAULT)
+
 
 final_results <- tibble( method ="CART default",
                          Accuracy =confusionMatrix(final_pred_rpart, test_set$DEFAULT)$overall[1],
@@ -587,10 +578,10 @@ final_results <- tibble( method ="CART default",
 
 final_results <-  bind_rows( final_results, 
                              tibble( method ="Random forest default",
-                             Accuracy =confusionMatrix(final_pred, test_set$DEFAULT)$overall[1],#Accuracy
-                             Sensitivity =confusionMatrix(final_pred, test_set$DEFAULT)$byClass[1],#Sensitivity
-                             Specificity =confusionMatrix(final_pred, test_set$DEFAULT)$byClass[2],#Specificity
-                             Balanced_Accuracy = confusionMatrix(final_pred, test_set$DEFAULT)$byClass[11])#Balanced Accuracy
+                             Accuracy =confusionMatrix(final_pred_rf, test_set$DEFAULT)$overall[1],#Accuracy
+                             Sensitivity =confusionMatrix(final_pred_rf, test_set$DEFAULT)$byClass[1],#Sensitivity
+                             Specificity =confusionMatrix(final_pred_rf, test_set$DEFAULT)$byClass[2],#Specificity
+                             Balanced_Accuracy = confusionMatrix(final_pred_rf, test_set$DEFAULT)$byClass[11])#Balanced Accuracy
 )
 final_results %>% knitr::kable()
 ###
