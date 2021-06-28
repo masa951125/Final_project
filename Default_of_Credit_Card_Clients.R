@@ -39,15 +39,12 @@ original_default <- read_csv("original_default.csv")
 
 #check dataset
 dim(original_default)
-head(original_default)
 str(original_default)
 summary(original_default)
 #no NAs
 
 #correlation
-plot_correlation(original_default)+
-  theme(axis.text=element_text(size=6))+ #change the sizes of texts in x axis and y axis
-  coord_fixed(ratio = 0.8) #change the aspect ratio of the graph
+plot_correlation(original_default)
 # DEFAULT has relatively strong correlations in terms of PAY, and PAY_AMT 
 
 ###########
@@ -97,6 +94,7 @@ original_default %>% ggplot(aes(x= SEX, fill= DEFAULT)) +
   geom_bar(position="fill") +
   ggtitle("SEX")
 #There seemed to be little difference between genders.
+
 
 #############
 #3 EDUCATION

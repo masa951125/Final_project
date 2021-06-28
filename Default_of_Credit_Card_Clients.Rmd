@@ -85,18 +85,13 @@ original_default <- read_csv("original_default.csv")
 
 ## Data Exploration
 
-First, we need to check the downloaded dataset. It has 30000 rows and 25 columns. First six rows are like these.
+First, we need to check the downloaded dataset. It has 30000 rows and 25 columns.
 
 ```{r original_default dimention, include=FALSE}
 dim(original_default)
 ```
 
-```{r FIrst 6 rows of the data, echo=FALSE}
-head(original_default)
-
-```
-
-We look into it further using "str" and "summary" function.
+We look into the data using "str" and "summary" function.
 
 ```{r Data exploration (str), echo=FALSE, echo=FALSE}
 str(original_default)
@@ -110,8 +105,8 @@ summary(original_default)
 
 How these predictors are correlated? We use "plot_correlation" function to investigate this.
 
-```{r echo=FALSE}
-plot_correlation(original_default) +theme(axis.text=element_text(size=6))+coord_fixed(ratio = 0.8)
+```{r Correlation Matrix, fig.height =7, fig.width=7,echo=FALSE}
+plot_correlation(original_default) 
 ```
 
 Takeaways from this are;
@@ -126,15 +121,9 @@ Then, we will look into these features further.
 
 ### 1 Outcome
 
-First, we look into the outcome, "default.payment.next.month". The data description says, "Default payment, 1=yes, 0=no.[^9]" We draw a distribution graph.
+First, we look into the outcome, "default.payment.next.month". The data description says, "Default payment, 1=yes, 0=no.[^9]" We show the proportion of "0","1".
 
 [^9]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
-
-```{r outcome graph, echo=FALSE}
-ggplot(data=original_default, aes(default.payment.next.month)) +geom_bar()
-```
-
-This variable is unevenly distributed. Then we see the proportion of "0","1".
 
 ```{r echo=FALSE}
 prop.table(table(original_default$default.payment.next.month))
@@ -163,7 +152,7 @@ summary(original_default$LIMIT_BAL)
 
 We draw its distribution filling the proportion of default.
 
-```{r LIMIT_BAL graph, echo=FALSE}
+```{r LIMIT_BAL graph, fig.height= 5, fig.width= 7, fig.align="center", echo=FALSE}
 ggplot(data=original_default, aes(LIMIT_BAL, fill=DEFAULT), ) +geom_histogram(bins=50)
 ```
 
@@ -181,14 +170,14 @@ prop.table(table(original_default$SEX))
 
 We draw its distribution and proportion in terms of default rates.
 
-```{r SEX distribution, echo=FALSE}
+```{r SEX distribution,fig.height= 5, fig.width= 5, fig.align="center", echo=FALSE}
 original_default %>% ggplot(aes(x=SEX, fill= DEFAULT)) +
   geom_bar() +
   ggtitle("SEX")+
   stat_count(aes(label = ..count..), geom = "label")# illustrate numbers
 ```
 
-```{r SEX stacked bar graph, echo=FALSE}
+```{r SEX stacked bar graph,fig.height= 5, fig.width= 5, fig.align="center", echo=FALSE}
 original_default %>% ggplot(aes(x=SEX, fill= DEFAULT)) +
   geom_bar(position="fill") +
   ggtitle("SEX")
@@ -198,20 +187,18 @@ There seemed to be little difference between genders. This categorical variable 
 
 ### 4 "EDUCATION"
 
-In this variable, values are "1", "2", "3", "4", "5", "6". They are categorical values. The numbers have meanings as follows ; 1=graduate school, 2=university, 3=high school, 4=others, 5=unknown, 6=unknown[^12]. We plot its distribution.
+In this variable, values are "1", "2", "3", "4", "5", "6". They are categorical values. The numbers have meanings as follows ; 1=graduate school, 2=university, 3=high school, 4=others, 5=unknown, 6=unknown[^12]. We plot its distribution and stacked bar graph.
 
 [^12]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
-```{r EDUCATION distribution, echo=FALSE}
+```{r EDUCATION distribution,fig.height= 5, fig.width= 7, fig.align="center", echo=FALSE}
 original_default %>% ggplot(aes(x=as.factor(EDUCATION), fill= DEFAULT)) +
   geom_bar() +
   ggtitle("EDUCATION")+
   stat_count(aes(label = ..count..), geom = "label")# illustrate numbers
 ```
 
-Stacked bar graph.
-
-```{r EDUCATION stacked bar graph, echo=FALSE}
+```{r EDUCATION stacked bar graph, fig.height= 5, fig.width= 7, fig.align="center", echo=FALSE}
 original_default %>% ggplot(aes(x=as.factor(EDUCATION), fill= DEFAULT)) +
   geom_bar(position="fill") +
   ggtitle("EDUCATION")
@@ -219,38 +206,20 @@ original_default %>% ggplot(aes(x=as.factor(EDUCATION), fill= DEFAULT)) +
 
 People whose final education is high school have relatively high default rate. On the other hand, people whose final education is graduate school have low default rate.
 
-###  5 "MARRIAGE"
+### 5 "MARRIAGE"
 
 [Kaggle's data explanation says](https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset);
 
-marital status. 1=married, 2=single, 3=others.
+marital status. 1=married, 2=single, 3=others. Categorical data. Plot. Stack bar graph
 
-```{r}
-summary(original_default$ MARRIAGE)
-unique(original_default$ MARRIAGE)
-```
-
-categorical data
-
-0 is not defined. 0 can be included in 3.
-
-```{r}
-original_default$MARRIAGE <- ifelse(original_default$MARRIAGE== 0, 3,
-                                    original_default$MARRIAGE)
-```
-
-Plot.
-
-```{r}
+```{r MARRIAGE distribution, fig.height= 5, fig.width= 7, fig.align="center", echo=FALSE}
 original_default %>% ggplot(aes(x=as.factor(MARRIAGE), fill= DEFAULT)) +
   geom_bar() +
   ggtitle("MARRIAGE")+
   stat_count(aes(label = ..count..), geom = "label")# illustrate numbers
 ```
 
-Stack bar graph
-
-```{r}
+```{r MARRIAGE stacked bar graph, fig.height= 5, fig.width= 7, fig.align="center",echo=FALSE}
 original_default %>% ggplot(aes(x=as.factor(MARRIAGE), fill= DEFAULT)) +
   geom_bar(position="fill") +
   ggtitle("MARRIAGE")
@@ -260,7 +229,7 @@ There seems to be little difference among the groups.
 
 ### 6 "AGE"
 
-```{r}
+```{r echo=FALSE}
 summary(original_default$AGE)
 ```
 
@@ -268,8 +237,8 @@ numeric data
 
 Plot.
 
-```{r}
-ggplot(data=original_default, aes(AGE, fill=DEFAULT)) +geom_histogram()
+```{r echo=FALSE, fig.align="center",fig.width=7,fig.height=5}
+ggplot(data=original_default, aes(AGE, fill=DEFAULT)) +geom_histogram(bins=50)
 ```
 
 ### 7 "PAY"
