@@ -11,15 +11,13 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introduction
 
-Finance thought to be a field where machine learning can be effective. It is surrounded by uncertainties, such as economic downturn, a collapse of markets. Individuals are no exception, we are not sure that a person is credible enough to lend money. They might be a deadbeat, or struggle in a significant debt, even though they look credible. This is the reason why machine learning plays a role in predicting uncertain economic future.
+Finance is one of fields where machine learning is used. It uses a huge amount of data and is also surrounded by a lot of uncertainties. In this paper, we will deal with a problem many credit card companies have been facing. Can we predict whether a credit user will pay their debt or fail based on objective data? Traditionally, finding a credible borrower have been a kind of know-how, or skill and experience nurtured by financial institutions. Instead, we try to build machine learning models. using a dataset which is open to public.
 
-In this paper, we will deal with a familiar problem. Based on objective data, can we predict effectively whether a credit user will pay their debt or result in default? Traditionally, finding a credible borrower have been a skill and experience nurtured by financial institutions, like banks, credit company. Instead, we will look into open data, and using machine learning models, such as logistic regression, decision tree, and random forest. We will fit the data with these models and find the model which will show the most accurate prediction.
+The dataset we use, "Default of Credit Card Clients Dataset" is stored in Kaggle website. It was collected in Taiwan in 2005. It has 24 variables, such as age, education, and payment condition. Outcome has two results, "0" non-default, "1" default. Each data was anonymously collected and labeled with individual ID.
 
-The dataset we use, "Default of Credit Card Clients Dataset" is stored in Kaggle website. It was collected in Taiwan in 2005. It has 24 variables, such as age, education, and payment condition. Outcome has two results, "0" non-default, "1" default.
+Our goal is to find a classification model which predicts the most accurate outcome, default or not. We need to bear it in mind that its distribution of these outcomes is imbalanced. Namely, the number of default clients are small compared to non- default clients. To address the issue, we will use other criteria, balanced accuracy.
 
-Our goal is to find a classification model which predicts the most accurate outcome. However, its distribution of outcome is imbalanced. Namely, the number of default clients are small compared to non- default clients. To address the issue, we will use other criteria, balanced accuracy.
-
-We will use three machine learning models, logistic regression, decision tree, and random forest. If necessary, we will tune their parameters to find the best solution. Overall procedures are as follows :
+We will use three machine learning models, logistic regression, decision tree, and random forest. If necessary, we will tune their parameters to find the best solution. Our procedures are as follows :
 
 1.  Data exploration and data cleansing
 2.  Splitting the dataset into train_set, validation_set, and test_set
@@ -27,9 +25,6 @@ We will use three machine learning models, logistic regression, decision tree, a
 4.  Considering models performance, and evaluating
 
 This paper is written as a final assignment in "HarvardX PH125.9x Data Science: Capstone."
-
-::: {style="page-break-before:always"}
-:::
 
 ## Packages and Dataset
 
@@ -95,6 +90,9 @@ We know there are no NAs, Nulls in the dataset.
 ```{r echo=TRUE}
 #Number of NAs 
 sum(is.na(original_default))
+```
+
+```{r echo=TRUE}
 #Number of Nulls
 sum(is.null(original_default))
 ```
@@ -114,9 +112,6 @@ Takeaways from this are;
 5.  PAY and BILL_AMT, BILL_AMT and PAY_AMT have strong correlation.
 
 Then, we will look into these features further.
-
-::: {style="page-break-before:always"}
-:::
 
 ### 1 Outcome
 
@@ -156,9 +151,6 @@ ggplot(data=original_default, aes(LIMIT_BAL, fill=DEFAULT), ) +geom_histogram(bi
 ```
 
 Distribution is skewed right. Default clients seem to be gathered around lower range of LIMIT_BAL values.
-
-::: {style="page-break-before:always"}
-:::
 
 ### 3 "SEX"
 
@@ -403,9 +395,6 @@ p6 <- ggplot(data=original_default, aes(PAY_AMT6)) +geom_histogram()
 grid.arrange(p1,p2,p3,p4,p5,p6, nrow=2, ncol=3)
 ```
 
-::: {style="page-break-before:always"}
-:::
-
 ## Data Preparation
 
 Before going further, we will arrange our dataset to make it easier to investigate. First, we remove ID column, as it is irrelevant to the outcome.
@@ -429,7 +418,7 @@ original_default <- original_default %>%
          PAY_6 = as.factor(PAY_6) )
 ```
 
-Regarding numerical values, "LIMIT_BAL" ranges from 10000 to 1000000, but "AGE" from 21 to 79 as we saw in the previous section. When doing regression, these wide varieties of ranges cause inaccuracy. Thus we "scale" these variables, using following formula.
+Regarding numerical values, "LIMIT_BAL" ranges from 10000 to 1000000, but "AGE" from 21 to 79 as we saw in the previous section. When doing regression, these wide varieties of ranges of variables cause inaccuracy. Thus we "scale" these variables, using following formula.
 
 $$Transformed.Values = \frac{Values - Mean}{Standard.Deviation}$$
 
@@ -467,41 +456,31 @@ validation_set <-pre_train_set[index_2,]
 train_set <- pre_train_set[-index_2,]
 ```
 
-The three datasets have the almost same default ratio.
+The three datasets have the almost same outcome ratio.
 
-```{r include=FALSE}
-#train_set
-prop.table(table(train_set$DEFAULT))
-#validation_set
-prop.table(table(validation_set$DEFAULT))
-#test_set
-prop.table(table(test_set$DEFAULT))
+```{r echo=FALSE}
+tibble(outcome =c(0,1),
+       "train_set"= prop.table(table(train_set$DEFAULT)),
+       "validation_set" = prop.table(table(validation_set$DEFAULT)),
+       "test_set" = prop.table(table(test_set$DEFAULT)))
 ```
-
-::: {style="page-break-before:always"}
-:::
 
 ## Model analysis
 
-### 1 Baseline prediction
+### 1 Evaluation metrics
 
-All predicted as non_default make factor vectors.
-
-```{r include=FALSE}
-base_pred <-factor(numeric(length(test_set$DEFAULT)),levels=c("0","1"))
-```
-
-Confusion matrix.
+Generally speaking, overall accuracy is used to evaluate a model. But this dataset has imbalanced proportion of outcomes. Guessing all responses are 0, we calculate its confusion matrix, accuracy, sensitivity and specificity.
 
 ```{r echo=FALSE}
-confusionMatrix(base_pred, test_set$DEFAULT)
+base_pred <-factor(numeric(length(validation_set$DEFAULT)),levels=c("0","1"))
+#function numeric(n) produces n 0 vectors.
+confusionMatrix(base_pred, validation_set$DEFAULT)
+#confusionMatrix(in caret package) is a function to produce confusion matrix and metrics such as accuracy 
 ```
 
-We need to find models which exceed these values(except sensitivity). In this model, sensitivity is 1, but specificity is 0. This means the credit company falsely give credit to a person who fail to repay a debt. The loss for the company would be huge.
+Even such a guess produces fairly good results., sensitivity (True Positive / True Positive+ False Negative) is 1.0, in contrast specificity (True Negative / True Negative + False Positive) is 0. Balanced accuracy (arithmetic mean of sensitivity and specificity) is 0.5, which is really a random guess. As such, the credit company falsely give credit to a lot of clients who will fail to repay a debt. The loss for the company would be huge.
 
-evaluation method
-
-as this is a classification problem, we calculate accuracy using confusion matrix. However, as is shown in this baseline prediction, default rate is imbalanced. As well as accuracy, we will pay attention to specificity and balanced accuracy.
+Therefore, our goal is to pursue more accurate accuracy than guessing all responses are 0, taking account of improving specificity. We will use both *accuracy* and *balanced accuracy* to evaluate each model.
 
 ### 2 Logistic regression
 
