@@ -9,10 +9,6 @@ output: pdf_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{=tex}
-\tableofcontents
-\clearpage
-```
 ## Introduction
 
 Finance thought to be a field where machine learning can be effective. It is surrounded by uncertainties, such as economic downturn, a collapse of markets. Individuals are no exception, we are not sure that a person is credible enough to lend money. They might be a deadbeat, or struggle in a significant debt, even though they look credible. This is the reason why machine learning plays a role in predicting uncertain economic future.
@@ -32,23 +28,24 @@ We will use three machine learning models, logistic regression, decision tree, a
 
 This paper is written as a final assignment in "HarvardX PH125.9x Data Science: Capstone."
 
+::: {style="page-break-before:always"}
+:::
+
 ## Packages and Dataset
 
 In this paper, we use R packages, "tidyverse[^1]", "DataExplorer[^2]", "gridExtra[^3]", "rpart[^4]", "caret[^5]", and "ranger[^6]".
 
 [^1]: <https://cran.r-project.org/web/packages/tidyverse/index.html>
 
-[^2]: <https://cran.r-project.org/web/packages/DataExplorer/vignettes/dataexplorer-intro.html>
+[^2]: <https://cran.r-project.org/web/packages/DataExplorer/index.html>
 
 [^3]: <https://cran.r-project.org/web/packages/gridExtra/index.html>
 
-[^4]: <https://cran.r-project.org/web/packages/rpart/rpart.pdf>
+[^4]: <https://cran.r-project.org/web/packages/rpart/index.html>
 
-[^5]: <https://topepo.github.io/caret/>
+[^5]: <https://cran.r-project.org/web/packages/caret/index.html>
 
-[^6]: <https://cran.r-project.org/web/packages/ranger/ranger.pdf>
-
-    Compared to "randomForest", "ranger" is very quick and easy to operate.
+[^6]: <https://cran.r-project.org/web/packages/ranger/index.html>
 
 ```{r Libraries used in this paper, include=FALSE}
 
@@ -85,27 +82,26 @@ original_default <- read_csv("original_default.csv")
 
 ## Data Exploration
 
-First, we need to check the downloaded dataset. It has 30000 rows and 25 columns.
+First, we need to check the downloaded dataset. Columns are as follows.
 
-```{r original_default dimention, include=FALSE}
-dim(original_default)
-```
-
-We look into the data using "str" and "summary" function.
-
-```{r Data exploration (str), echo=FALSE, echo=FALSE}
+```{r columns, echo=FALSE}
 str(original_default)
 ```
 
-```{r echo=FALSE}
-summary(original_default)
-```
+It has 30000 rows and 25 columns. "Default.payment.next.month" is an outcome . Other features seem to be either numerical or categorical data. "SEX", "EDUCATION", "MARRIAGE", "PAY_0" -"PAY_6", and "default.payment.next.month" look like categorical data, as their values are limited number of integers. Other features seem to be numerical.
 
-"Default.payment.next.month" is an outcome of the dataset which has values of 0 and 1. Other features seem to be either numerical or categorical data. "SEX", "EDUCATION", "MARRIAGE" and "PAY_0" -"PAY_6" look like categorical data, as their values are limited number of integers. Other features seem to be numerical. From checking its summary, we understand there are no NAs in the dataset.
+We know there are no NAs, Nulls in the dataset.
+
+```{r echo=TRUE}
+#Number of NAs 
+sum(is.na(original_default))
+#Number of Nulls
+sum(is.null(original_default))
+```
 
 How these predictors are correlated? We use "plot_correlation" function to investigate this.
 
-```{r Correlation Matrix, fig.height =7, fig.width=7,echo=FALSE}
+```{r Correlation Matrix, fig.height =6, fig.width=6,echo=FALSE}
 plot_correlation(original_default) 
 ```
 
@@ -118,6 +114,9 @@ Takeaways from this are;
 5.  PAY and BILL_AMT, BILL_AMT and PAY_AMT have strong correlation.
 
 Then, we will look into these features further.
+
+::: {style="page-break-before:always"}
+:::
 
 ### 1 Outcome
 
@@ -142,7 +141,7 @@ original_default$DEFAULT <- as.factor(original_default$DEFAULT)
 
 ### 2 "LIMIT_BAL"
 
-This is an "amount of given credit in NT dollars (includes individual and family/supplementary credit)[^10]" It is clearly numeric data.
+This is an "amount of given credit in NT dollars (includes individual and family/supplementary credit)[^10]" It is numerical data.
 
 [^10]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset> NT stands for "New Taiwan".
 
@@ -152,11 +151,14 @@ summary(original_default$LIMIT_BAL)
 
 We draw its distribution filling the proportion of default.
 
-```{r LIMIT_BAL graph, fig.height= 5, fig.width= 7, fig.align="center", echo=FALSE}
+```{r LIMIT_BAL graph, echo=FALSE, fig.align="center", fig.height=3, fig.width=6}
 ggplot(data=original_default, aes(LIMIT_BAL, fill=DEFAULT), ) +geom_histogram(bins=50)
 ```
 
 Distribution is skewed right. Default clients seem to be gathered around lower range of LIMIT_BAL values.
+
+::: {style="page-break-before:always"}
+:::
 
 ### 3 "SEX"
 
@@ -164,23 +166,24 @@ The values "1", "2" correspond to male and female respectively[^11]. Male is 40%
 
 [^11]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
-```{r echo=FALSE}
+```{r SEX graph, include=FALSE}
 prop.table(table(original_default$SEX))
 ```
 
-We draw its distribution and proportion in terms of default rates.
+We draw its distribution and its proportion in terms of default rates.
 
-```{r SEX distribution,fig.height= 5, fig.width= 5, fig.align="center", echo=FALSE}
-original_default %>% ggplot(aes(x=SEX, fill= DEFAULT)) +
+```{r SEX distribution, echo=FALSE, fig.align="center", fig.height=3, fig.width=6}
+sex_ditribution <- original_default %>% 
+  ggplot(aes(x=as.factor(SEX), fill= DEFAULT)) +
   geom_bar() +
-  ggtitle("SEX")+
-  stat_count(aes(label = ..count..), geom = "label")# illustrate numbers
-```
-
-```{r SEX stacked bar graph,fig.height= 5, fig.width= 5, fig.align="center", echo=FALSE}
-original_default %>% ggplot(aes(x=SEX, fill= DEFAULT)) +
+  ggtitle("SEX Distribution")
+ 
+sex_stackedbar <-original_default %>% 
+  ggplot(aes(x=as.factor(SEX), fill= DEFAULT)) +
   geom_bar(position="fill") +
-  ggtitle("SEX")
+  ggtitle("SEX Proportion") 
+
+grid.arrange(sex_ditribution, sex_stackedbar, nrow=1, ncol=2)
 ```
 
 There seemed to be little difference between genders. This categorical variable is somewhat irrelevant to the outcome.
@@ -191,93 +194,110 @@ In this variable, values are "1", "2", "3", "4", "5", "6". They are categorical 
 
 [^12]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
-```{r EDUCATION distribution,fig.height= 5, fig.width= 7, fig.align="center", echo=FALSE}
-original_default %>% ggplot(aes(x=as.factor(EDUCATION), fill= DEFAULT)) +
+```{r EDUCATION graph, echo=FALSE, fig.align="center", fig.height=3, fig.width=6}
+EDU_distribution <-original_default %>% 
+  ggplot(aes(x=as.factor(EDUCATION), fill= DEFAULT)) +
   geom_bar() +
-  ggtitle("EDUCATION")+
-  stat_count(aes(label = ..count..), geom = "label")# illustrate numbers
-```
+  ggtitle("EDUCATION Distribution")
 
-```{r EDUCATION stacked bar graph, fig.height= 5, fig.width= 7, fig.align="center", echo=FALSE}
-original_default %>% ggplot(aes(x=as.factor(EDUCATION), fill= DEFAULT)) +
+EDU_stackedbar <-original_default %>% 
+  ggplot(aes(x=as.factor(EDUCATION), fill= DEFAULT)) +
   geom_bar(position="fill") +
-  ggtitle("EDUCATION")
+  ggtitle("EDUCATION Proportion")
+
+grid.arrange(EDU_distribution, EDU_stackedbar, nrow=1, ncol=2)
 ```
 
 People whose final education is high school have relatively high default rate. On the other hand, people whose final education is graduate school have low default rate.
 
 ### 5 "MARRIAGE"
 
-[Kaggle's data explanation says](https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset);
+This is also categorical data. The value number means clients' marital status[^13]. 1=married, 2=single, 3=others. There are 54 individuals whose values are 0.
 
-marital status. 1=married, 2=single, 3=others. Categorical data. Plot. Stack bar graph
+[^13]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
-```{r MARRIAGE distribution, fig.height= 5, fig.width= 7, fig.align="center", echo=FALSE}
-original_default %>% ggplot(aes(x=as.factor(MARRIAGE), fill= DEFAULT)) +
-  geom_bar() +
-  ggtitle("MARRIAGE")+
-  stat_count(aes(label = ..count..), geom = "label")# illustrate numbers
+```{r include=FALSE}
+sum(original_default$MARRIAGE==0)
 ```
 
-```{r MARRIAGE stacked bar graph, fig.height= 5, fig.width= 7, fig.align="center",echo=FALSE}
-original_default %>% ggplot(aes(x=as.factor(MARRIAGE), fill= DEFAULT)) +
+We draw its distribution graph and stacked bar graph.
+
+```{r MARRIAGE graph, echo=FALSE, fig.align="center", fig.height=3, fig.width=6}
+MAR_distribution <- original_default %>% 
+  ggplot(aes(x=as.factor(MARRIAGE), fill= DEFAULT)) +
+  geom_bar() +
+  ggtitle("MARRIAGE Distribution")
+
+MAR_proportion <-original_default %>% 
+  ggplot(aes(x=as.factor(MARRIAGE), fill= DEFAULT)) +
   geom_bar(position="fill") +
-  ggtitle("MARRIAGE")
+  ggtitle("MARRIAGE Proportion")
+
+grid.arrange(MAR_distribution, MAR_proportion, nrow=1, ncol=2)
 ```
 
 There seems to be little difference among the groups.
 
 ### 6 "AGE"
 
+As its name indicates, it is numerical data.
+
 ```{r echo=FALSE}
 summary(original_default$AGE)
 ```
 
-numeric data
+We plots its distribution as well as its default rate.
 
-Plot.
+```{r AGE graph, echo=FALSE, fig.align="center", fig.height=6, fig.width=6}
+AGE_distribution <- original_default %>%
+  ggplot(aes(AGE, fill=DEFAULT)) +
+  geom_histogram(bins=30)+
+  ggtitle("AGE Distribution")
 
-```{r echo=FALSE, fig.align="center",fig.width=7,fig.height=5}
-ggplot(data=original_default, aes(AGE, fill=DEFAULT)) +geom_histogram(bins=50)
+AGE_proportion <- original_default %>% 
+  ggplot(aes(x=AGE, fill= DEFAULT)) +
+  geom_bar(position="fill") +
+  ggtitle("AGE Proportion")
+
+grid.arrange(AGE_distribution, AGE_proportion, nrow=2, ncol=1)
 ```
+
+The number of clients are decreasing as they get older. Regarding default clients, younger people in their early 20s and older age groups around 60s show higher proportions than other age groups.
 
 ### 7 "PAY"
 
-[Kaggle's data explanation says](https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset);
+Variable from PAY_0, PAY_2 \~PAY_6 have the same values, as are explained in the description[^14]. They are categorical data. PAY_0 means repayment status in September, 2005. Then go back in time by a month until April, 2005. Values are ;
 
-PAY_0 means repayment status in September, 2005.
+[^14]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
--1=pay duly, 1=payment delay for one month, 2=payment delay for two months, ... 8=payment delay for eight months, 9=payment delay for nine months and above. Regarding values from PAY_2 to PAY_6, the scales are the same as PAY_0. As the number increases, the date of repayment status goes back in time by a month until April, 2005 which is PAY_6.
-
-. PAY_0.
-
-```{r}
-summary(original_default$PAY_0)
+```{r echo=FALSE}
 unique(original_default$PAY_0)
 ```
 
-They are categorical data.
+They mean; "-1"= pay duly, "1"= payment delay for 1 month, "2" = payment delay for 2 months, ... 9 = payment delay for 9 months and above. "0" and "-2" are not defined.
 
-Plot.
+We draw PAY_0 distribution and stacked bar graph.hey are categorical data.
 
-```{r}
-original_default %>% ggplot(aes(x=as.factor(PAY_0), fill= DEFAULT)) +
+```{r PAY_0 graph, echo=FALSE, fig.height=6, fig.width=6}
+PAY_distribution <-original_default %>% 
+  ggplot(aes(x=as.factor(PAY_0), fill= DEFAULT)) +
   geom_bar() +
-  ggtitle("PAY_0")+
-  stat_count(aes(label = ..count..), geom = "label")# illustrate numbers
-```
+  ggtitle("PAY_0 Distribution")
 
-Stack bar graph PAY_0.
-
-```{r echo=FALSE}
-original_default %>% ggplot(aes(x=as.factor(PAY_0), fill= DEFAULT)) +
+PAY_stackedbar <- original_default %>% 
+  ggplot(aes(x=as.factor(PAY_0), fill= DEFAULT)) +
   geom_bar(position="fill") +
-  ggtitle("PAY_0")
+  ggtitle("PAY_0 Proportion")
+
+grid.arrange(PAY_distribution, PAY_stackedbar, nrow=2, ncol=1)
+  
 ```
 
-PAY_2 \~ PAY_6 's structures are almost as same as PAY_0. Show distribution.
+We are not sure what "-2" and "0" mean. But from these two graphs we understand that as payment delay becomes longer, clients are more likely to come to a default.
 
-```{r echo=FALSE}
+PAY_2 \~ PAY_6 's structures are almost as the same as PAY_0. We show their distribution.
+
+```{r PAY graphs, echo=FALSE, fig.height=4, fig.width=6}
 #PAY_0
 graph_p0 <-
   original_default %>% ggplot(aes(x=as.factor(PAY_0))) +
@@ -323,25 +343,24 @@ grid.arrange(graph_p0, graph_p2, graph_p3, graph_p4, graph_p5, graph_p6, nrow=2,
 
 ### 8 "BILL_AMT"
 
-[Kaggle's data explanation says](https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset);
+This variable means an amount of bill statement. This is numerical data.
 
-BILL_AMT1 is an amount of bill statement in September, 2005 (NT dollar). Likewise PAY, BILL_AMT goes back in time by a month from August to April, 2005 which is BILL_AMT6.
-
-```{r}
+```{r echo=FALSE}
 summary(original_default$BILL_AMT1)
 ```
 
-These are numerical data.
+BILL_AMT1 is a record in September, 2005[^15]. Then go back in time by a month until April, 2005. Likewise previous variables, we plot BILL_AMT distribution.
 
-Here is BILL_AMT1's plot.
+[^15]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
-```{r}
-ggplot(data=original_default, aes(BILL_AMT1,fill= DEFAULT)) +geom_histogram()
+```{r BILL_AMT1 graph, echo=FALSE, fig.height=3, fig.width=6}
+ggplot(data=original_default, aes(BILL_AMT1,fill= DEFAULT)) +
+  geom_histogram(bins=30)
 ```
 
 From BILL_AMT1 to BILL_AMT6, their structures are almost the same as are shown in following plots.
 
-```{r}
+```{r BILL_AMT graphs, echo=FALSE, fig.height=4, fig.width=6, message=FALSE}
 b1 <- ggplot(data=original_default, aes(BILL_AMT1)) +geom_histogram()
 b2 <- ggplot(data=original_default, aes(BILL_AMT2)) +geom_histogram()
 b3 <- ggplot(data=original_default, aes(BILL_AMT3)) +geom_histogram()
@@ -353,25 +372,27 @@ grid.arrange(b1,b2,b3,b4,b5,b6, nrow=2, ncol=3)
 
 ### 9 "PAY_AMT"
 
-[Kaggle's data explanation says](https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset);
+This variable means an amount of previous payment. This is numerical data. This is a summary of PAY_AMT1.
 
-PAY_AMT1 is an amount of previous payment in September, 2005 (NT dollar). Likewise BILL_AMT, PAY_AMT goes back in time by a month from August to April, 2005 which is PAY_AMT6.
-
-```{r}
+```{r echo=FALSE}
 summary(original_default$PAY_AMT1)
 ```
 
-They are numerical data.
+PAY_AMT1 is an amount of previous payment in September, 2005[^16]. Likewise BILL_AMT, PAY_AMT goes back in time by a month from August to April, 2005 which is PAY_AMT6.
+
+[^16]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
 Here is PAY_AMT1's plot.
 
-```{r}
+```{r PAY_AMT, echo=FALSE, fig.height=3, fig.width=6, message=FALSE}
 ggplot(data=original_default, aes(PAY_AMT1,fill= DEFAULT)) +geom_histogram()
 ```
 
+As we have seen a distribution summary, it is right skewed significantly. Maximum amount is more than 850,000 NT dollars, but its mean and median are 5664 and 2100 respectively.
+
 From PAY_AMT1 to PAY_AMT6, their structures are almost the same as are shown in following plots.
 
-```{r}
+```{r PAY_AMT graphs, echo=FALSE, fig.height=4, fig.width=6, message=FALSE}
 p1 <- ggplot(data=original_default, aes(PAY_AMT1)) +geom_histogram()
 p2 <- ggplot(data=original_default, aes(PAY_AMT2)) +geom_histogram()
 p3 <- ggplot(data=original_default, aes(PAY_AMT3)) +geom_histogram()
@@ -382,17 +403,20 @@ p6 <- ggplot(data=original_default, aes(PAY_AMT6)) +geom_histogram()
 grid.arrange(p1,p2,p3,p4,p5,p6, nrow=2, ncol=3)
 ```
 
+::: {style="page-break-before:always"}
+:::
+
 ## Data Preparation
 
-Remove ID
+Before going further, we will arrange our dataset to make it easier to investigate. First, we remove ID column, as it is irrelevant to the outcome.
 
-```{r}
+```{r include=FALSE}
 original_default <- original_default %>% select(-ID)
 ```
 
-Categorical data, change numeric to factor. SEX,EDUCATION,MARRIAGE, PAY_0\~PAY_6 are categorical data
+Currently our data is composed of numerical values. Categorical values need to be changed to factors. As we saw in data exploration, SEX,EDUCATION,MARRIAGE, PAY_0\~PAY_6 are categorical values.
 
-```{r}
+```{r include=FALSE}
 original_default <- original_default %>%
   mutate(SEX = as.factor(SEX),
          EDUCATION = as.factor(EDUCATION),
@@ -405,9 +429,13 @@ original_default <- original_default %>%
          PAY_6 = as.factor(PAY_6) )
 ```
 
-Scaling. We use "scale" function to standardize predictors. Categorical data columns. we assume these can be defined as factors.
+Regarding numerical values, "LIMIT_BAL" ranges from 10000 to 1000000, but "AGE" from 21 to 79 as we saw in the previous section. When doing regression, these wide varieties of ranges cause inaccuracy. Thus we "scale" these variables, using following formula.
 
-```{r}
+$$Transformed.Values = \frac{Values - Mean}{Standard.Deviation}$$
+
+Then we get variables whose mean is 0, and standard deviation is 1.
+
+```{r include=FALSE}
 cat_col <- c("SEX", "EDUCATION", "MARRIAGE",
              "PAY_0", "PAY_2", "PAY_3", "PAY_4", "PAY_5", "PAY_6", "DEFAULT")
 
@@ -421,36 +449,27 @@ num_col <- all_col[-which(all_col %in% cat_col)]
 original_default[num_col] <-original_default %>% select(-all_of(cat_col)) %>% scale()
 ```
 
-Check the dataset.
+Then, we split the data into two. As we have relatively a large amount of data, 30000, the proportion we use is 80% and 20%. The smaller dataset will be used when evaluating a model at the final stage. We call it test_set.
 
-```{r}
-str(original_default)
-summary(original_default)
-```
-
-Spliting into train_set,validation_set, test_set.
-
-First we split data into test_set, and default.Test_set will be only used as evaluation. We use "createDataPartition" function in "caret" package. Set seed 2021.
-
-```{r}
+```{r include=FALSE}
 set.seed(2021, sample.kind = "Rounding")
 index_1 <- createDataPartition(original_default$DEFAULT, p=0.2, list=F, times=1)
 test_set <- original_default[index_1,]
-default <- original_default[-index_1,]
+pre_train_set <- original_default[-index_1,]
 ```
 
-As we tune hyperparameters, we split default into train_set and validation_set. Validation set will be used when tuning models.
+We are going to use decision tree, and random forest later. They can be tuned to produce improved results by finding hyperparameters. If we tune the model using hyperparameters again and again, this might cause overfitting. To avoid this , we split the larger dataset again and produce two datasets, "train_set" and "validation_set". Split proportion is the same as before, 80% and 20%.
 
-```{r}
+```{r message=FALSE, include=FALSE}
 set.seed(2021, sample.kind = "Rounding")
-index_2 <- createDataPartition(default$DEFAULT, p=0.2, list=F, times=1)
-validation_set <-default[index_2,]
-train_set <- default[-index_2,]
+index_2 <- createDataPartition(pre_train_set$DEFAULT, p=0.2, list=F, times=1)
+validation_set <-pre_train_set[index_2,]
+train_set <- pre_train_set[-index_2,]
 ```
 
-Check default ratio.
+The three datasets have the almost same default ratio.
 
-```{r}
+```{r include=FALSE}
 #train_set
 prop.table(table(train_set$DEFAULT))
 #validation_set
@@ -459,7 +478,8 @@ prop.table(table(validation_set$DEFAULT))
 prop.table(table(test_set$DEFAULT))
 ```
 
-Almost similar ratio.
+::: {style="page-break-before:always"}
+:::
 
 ## Model analysis
 
@@ -467,13 +487,13 @@ Almost similar ratio.
 
 All predicted as non_default make factor vectors.
 
-```{r}
+```{r include=FALSE}
 base_pred <-factor(numeric(length(test_set$DEFAULT)),levels=c("0","1"))
 ```
 
 Confusion matrix.
 
-```{r}
+```{r echo=FALSE}
 confusionMatrix(base_pred, test_set$DEFAULT)
 ```
 
@@ -489,7 +509,7 @@ As this is a classification, we use logistic regression. we use "glm" function. 
 
 Stepwise regression explanation. First we make null-model and full-model.
 
-```{r}
+```{r include=FALSE}
 #a null model with no predictors
 null_model <- glm(DEFAULT~1, data = train_set, family = binomial(link = "logit"))
 
@@ -499,7 +519,7 @@ full_model <- glm(DEFAULT~., data = train_set, family = binomial(link = "logit")
 
 Forward and backward stepwise algorithm.
 
-```{r}
+```{r include=FALSE}
 step_mdl   <- step(null_model, 
                    scope = list(lower = null_model, upper = full_model), 
                    direction = "both")
@@ -507,20 +527,20 @@ step_mdl   <- step(null_model,
 
 Predict by using validation_set. First we predict probabilities and then classify them using cut-off 0.5.
 
-```{r}
+```{r include=FALSE}
 step_prob <- predict(step_mdl, validation_set,type="response")
 step_pred <- ifelse(step_prob >0.5,1,0)
 ```
 
 To show accuracy we use confusionMatrix function in caret library.
 
-```{r}
+```{r echo=FALSE}
 confusionMatrix(as.factor(step_pred), validation_set$DEFAULT)
 ```
 
 Make a table.
 
-```{r}
+```{r echo=FALSE}
 results <- tibble(method = "logistic regresion", 
                   Accuracy =confusionMatrix(as.factor(step_pred), validation_set$DEFAULT)$overall[1],
                   Sensitivity =confusionMatrix(as.factor(step_pred), validation_set$DEFAULT)$byClass[1],
@@ -534,32 +554,32 @@ results %>% knitr::kable()
 
 Use CART classification and regression tree. Rpart \~ using default minsplit=20, cp=0.01.
 
-```{r}
+```{r include=FALSE}
 set.seed(2021, sample.kind = "Rounding")
 rpart_mdl <-rpart(DEFAULT ~ .,data = train_set)
 ```
 
 Predict.
 
-```{r}
+```{r include=FALSE}
 rpart_pred <- predict(rpart_mdl, validation_set, type="class")
 ```
 
 Confusion Matrix.
 
-```{r}
+```{r echo=FALSE}
 confusionMatrix(rpart_pred, validation_set$DEFAULT)
 ```
 
 Draw decision tree rpart.plot is good function to show decision tree clearly.
 
-```{r}
+```{r echo=FALSE}
 rpart.plot(rpart_mdl)
 ```
 
 Find used features.
 
-```{r}
+```{r echo=FALSE}
 rpart_mdl$variable.importance
 ```
 
@@ -567,7 +587,7 @@ This model illustrates that PAY_0 is overwhelmingly important.
 
 Make a table
 
-```{r}
+```{r echo=FALSE}
 results <- bind_rows(
   results,
   tibble(method="CART default",  
@@ -589,7 +609,7 @@ We use "train" function in "caret" package. and tune cp. Cross validation
 
 rpart \~tuning using smaller cp, less than 0.01
 
-```{r}
+```{r include=FALSE}
 set.seed(2021, sample.kind = "Rounding")
 rpart_tuned_mdl <- train(DEFAULT ~ ., 
                       method = "rpart", 
@@ -600,14 +620,14 @@ rpart_tuned_mdl <- train(DEFAULT ~ .,
 
 Plot cp.
 
-```{r}
+```{r echo=FALSE}
 plot(rpart_tuned_mdl)
 opt_cp <-rpart_tuned_mdl$bestTune
 ```
 
 Draw decision tree. using rpart.plot.
 
-```{r}
+```{r echo=FALSE}
 rpart.plot(rpart_tuned_mdl$finalModel)
 ```
 
@@ -615,19 +635,19 @@ Note: numeric values are scaled
 
 Prediction.
 
-```{r}
+```{r include=FALSE}
 rpart_tuned_pred <- predict(rpart_tuned_mdl, validation_set)
 ```
 
 Confusion matrix
 
-```{r}
+```{r echo=FALSE}
 confusionMatrix(rpart_tuned_pred, validation_set$DEFAULT)
 ```
 
 Make a table.
 
-```{r}
+```{r echo=FALSE}
 results <- bind_rows(
   results,
   tibble(method="CART tuned cp",  
@@ -643,7 +663,7 @@ results %>% knitr::kable()
 
 Using "ranger".
 
-```{r}
+```{r include=FALSE}
 set.seed(2021, sample.kind = "Rounding")
 rf_mdl <- ranger(
   formula = DEFAULT ~ ., 
@@ -653,25 +673,25 @@ rf_mdl <- ranger(
 
 Model details.
 
-```{r}
+```{r echo=FALSE}
 rf_mdl
 ```
 
 Prediction.
 
-```{r}
+```{r include=FALSE}
 rf_pred <- predict(rf_mdl, validation_set)$predictions
 ```
 
 Confusion matrix
 
-```{r}
+```{r echo=FALSE}
 confusionMatrix(rf_pred, validation_set$DEFAULT)
 ```
 
 Make a table.
 
-```{r}
+```{r echo=FALSE}
 results <- bind_rows(
   results,
   tibble(method="random forest default",  
@@ -687,13 +707,13 @@ results %>% knitr::kable()
 
 Grid search
 
-```{r}
+```{r echo=FALSE}
 modelLookup("ranger")
 ```
 
 Make a model.
 
-```{r}
+```{r include=FALSE}
 set.seed(2021, sample.kind = "Rounding")
 rf_cv_mdl <- train( DEFAULT~ .,
                     data = train_set,
@@ -708,25 +728,25 @@ rf_cv_mdl <- train( DEFAULT~ .,
 
 Plot.
 
-```{r}
+```{r echo=FALSE}
 plot(rf_cv_mdl)
 ```
 
 Prediction.
 
-```{r}
+```{r include=FALSE}
 rf_cv_pred <- predict(rf_cv_mdl, validation_set)
 ```
 
 Confusion Matrix
 
-```{r}
+```{r echo=FALSE}
 confusionMatrix(rf_cv_pred, validation_set$DEFAULT)
 ```
 
 Make a table.
 
-```{r}
+```{r echo=FALSE}
 results <- bind_rows( results,
                       tibble(
                         method="random forest tuned ",
@@ -742,19 +762,19 @@ results %>% knitr::kable()
 
 Best performance in terms of balanced accuracy is "random forest default model" Best performance in terms of accuracy is "CART default model" Then evaluate by using test_set.
 
-```{r}
+```{r include=FALSE}
 final_pred_rpart <- predict(rpart_mdl, test_set,type="class")
 confusionMatrix(final_pred_rpart, test_set$DEFAULT)
 ```
 
-```{r}
+```{r include=FALSE}
 final_pred_rf <-predict(rf_mdl, test_set)$predictions
 confusionMatrix(final_pred_rf, test_set$DEFAULT)$byClass
 ```
 
 Make a table.
 
-```{r}
+```{r echo=FALSE}
 final_results <- tibble( method ="CART default",
                          Accuracy =confusionMatrix(final_pred_rpart, test_set$DEFAULT)$overall[1],
                          Sensitivity =confusionMatrix(final_pred_rpart, test_set$DEFAULT)$byClass[1],

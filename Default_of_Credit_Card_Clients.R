@@ -40,7 +40,10 @@ original_default <- read_csv("original_default.csv")
 #check dataset
 dim(original_default)
 str(original_default)
-summary(original_default)
+
+sum(is.null(original_default))
+sum(is.na(original_default))
+sum(complete.cases(original_default))
 #no NAs
 
 #correlation
