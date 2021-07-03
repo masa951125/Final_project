@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introduction
 
-Finance is one of fields where machine learning is used. It uses a huge amount of data and is also surrounded by a lot of uncertainties. In this paper, we will deal with a problem many credit card companies have been facing. Can we predict whether a credit user will pay their debt or fail based on objective data? Traditionally, finding a credible borrower have been a kind of know-how, or skill and experience nurtured by financial institutions. Instead, we try to build machine learning models. using a dataset which is open to public.
+Finance is one of fields where machine learning is commonly used. It deals with a huge amount of data and is also surrounded by a lot of uncertainties. To predict outcome using pre-existing data is a crucial part of finance. In this paper, we will deal with a problem many credit card companies have been facing. Can we predict whether a credit user will pay their debt or fail based on objective data? Traditionally, finding a credible borrower have been a kind of know-how, or skill and experience nurtured by financial institutions. Instead, we try to build machine learning models. using a dataset which is open to public.
 
 The dataset we use, "Default of Credit Card Clients Dataset" is stored in Kaggle website. It was collected in Taiwan in 2005. It has 24 variables, such as age, education, and payment condition. Outcome has two results, "0" non-default, "1" default. Each data was anonymously collected and labeled with individual ID.
 
@@ -228,7 +228,7 @@ MAR_proportion <-original_default %>%
 grid.arrange(MAR_distribution, MAR_proportion, nrow=1, ncol=2)
 ```
 
-There seems to be little difference among the groups.
+Comparing married and single, married people are a little likely to become default.
 
 ### 6 "AGE"
 
@@ -254,7 +254,7 @@ AGE_proportion <- original_default %>%
 grid.arrange(AGE_distribution, AGE_proportion, nrow=2, ncol=1)
 ```
 
-The number of clients are decreasing as they get older. Regarding default clients, younger people in their early 20s and older age groups around 60s show higher proportions than other age groups.
+The number of clients are decreasing as they get older. Regarding default clients, younger people in their early 20s and older age groups around 60s show higher proportions of default than other age groups.
 
 ### 7 "PAY"
 
@@ -338,7 +338,8 @@ grid.arrange(graph_p0, graph_p2, graph_p3, graph_p4, graph_p5, graph_p6, nrow=2,
 This variable means an amount of bill statement. This is numerical data.
 
 ```{r echo=FALSE}
-summary(original_default$BILL_AMT1)
+summary(original_default[,13:18]) 
+       
 ```
 
 BILL_AMT1 is a record in September, 2005[^15]. Then go back in time by a month until April, 2005. Likewise previous variables, we plot BILL_AMT distribution.
@@ -353,21 +354,21 @@ ggplot(data=original_default, aes(BILL_AMT1,fill= DEFAULT)) +
 From BILL_AMT1 to BILL_AMT6, their structures are almost the same as are shown in following plots.
 
 ```{r BILL_AMT graphs, echo=FALSE, fig.height=4, fig.width=6, message=FALSE}
-b1 <- ggplot(data=original_default, aes(BILL_AMT1)) +geom_histogram()
-b2 <- ggplot(data=original_default, aes(BILL_AMT2)) +geom_histogram()
-b3 <- ggplot(data=original_default, aes(BILL_AMT3)) +geom_histogram()
-b4 <- ggplot(data=original_default, aes(BILL_AMT4)) +geom_histogram()
-b5 <- ggplot(data=original_default, aes(BILL_AMT5)) +geom_histogram()
-b6 <- ggplot(data=original_default, aes(BILL_AMT6)) +geom_histogram()
+b1 <- ggplot(data=original_default, aes(BILL_AMT1)) +geom_histogram(bins=30)
+b2 <- ggplot(data=original_default, aes(BILL_AMT2)) +geom_histogram(bins=30)
+b3 <- ggplot(data=original_default, aes(BILL_AMT3)) +geom_histogram(bins=30)
+b4 <- ggplot(data=original_default, aes(BILL_AMT4)) +geom_histogram(bins=30)
+b5 <- ggplot(data=original_default, aes(BILL_AMT5)) +geom_histogram(bins=30)
+b6 <- ggplot(data=original_default, aes(BILL_AMT6)) +geom_histogram(bins=30)
 grid.arrange(b1,b2,b3,b4,b5,b6, nrow=2, ncol=3)
 ```
 
 ### 9 "PAY_AMT"
 
-This variable means an amount of previous payment. This is numerical data. This is a summary of PAY_AMT1.
+This variable means an amount of previous payment. This is numerical data.
 
 ```{r echo=FALSE}
-summary(original_default$PAY_AMT1)
+summary(original_default[,19:24])
 ```
 
 PAY_AMT1 is an amount of previous payment in September, 2005[^16]. Likewise BILL_AMT, PAY_AMT goes back in time by a month from August to April, 2005 which is PAY_AMT6.
@@ -377,7 +378,7 @@ PAY_AMT1 is an amount of previous payment in September, 2005[^16]. Likewise BILL
 Here is PAY_AMT1's plot.
 
 ```{r PAY_AMT, echo=FALSE, fig.height=3, fig.width=6, message=FALSE}
-ggplot(data=original_default, aes(PAY_AMT1,fill= DEFAULT)) +geom_histogram()
+ggplot(data=original_default, aes(PAY_AMT1,fill= DEFAULT)) +geom_histogram(bins=30)
 ```
 
 As we have seen a distribution summary, it is right skewed significantly. Maximum amount is more than 850,000 NT dollars, but its mean and median are 5664 and 2100 respectively.
@@ -385,12 +386,12 @@ As we have seen a distribution summary, it is right skewed significantly. Maximu
 From PAY_AMT1 to PAY_AMT6, their structures are almost the same as are shown in following plots.
 
 ```{r PAY_AMT graphs, echo=FALSE, fig.height=4, fig.width=6, message=FALSE}
-p1 <- ggplot(data=original_default, aes(PAY_AMT1)) +geom_histogram()
-p2 <- ggplot(data=original_default, aes(PAY_AMT2)) +geom_histogram()
-p3 <- ggplot(data=original_default, aes(PAY_AMT3)) +geom_histogram()
-p4 <- ggplot(data=original_default, aes(PAY_AMT4)) +geom_histogram()
-p5 <- ggplot(data=original_default, aes(PAY_AMT5)) +geom_histogram()
-p6 <- ggplot(data=original_default, aes(PAY_AMT6)) +geom_histogram()
+p1 <- ggplot(data=original_default, aes(PAY_AMT1)) +geom_histogram(bins=30)
+p2 <- ggplot(data=original_default, aes(PAY_AMT2)) +geom_histogram(bins=30)
+p3 <- ggplot(data=original_default, aes(PAY_AMT3)) +geom_histogram(bins=30)
+p4 <- ggplot(data=original_default, aes(PAY_AMT4)) +geom_histogram(bins=30)
+p5 <- ggplot(data=original_default, aes(PAY_AMT5)) +geom_histogram(bins=30)
+p6 <- ggplot(data=original_default, aes(PAY_AMT6)) +geom_histogram(bins=30)
 
 grid.arrange(p1,p2,p3,p4,p5,p6, nrow=2, ncol=3)
 ```
@@ -418,11 +419,11 @@ original_default <- original_default %>%
          PAY_6 = as.factor(PAY_6) )
 ```
 
-Regarding numerical values, "LIMIT_BAL" ranges from 10000 to 1000000, but "AGE" from 21 to 79 as we saw in the previous section. When doing regression, these wide varieties of ranges of variables cause inaccuracy. Thus we "scale" these variables, using following formula.
+Regarding numerical values, "LIMIT_BAL" ranges from 10000 to 1000000, but "AGE" from 21 to 79 as we saw in the previous section. When doing regression, these wide varieties of ranges of variables cause inaccuracy. Thus we standardize these variables, using following formula.
 
 $$Transformed.Values = \frac{Values - Mean}{Standard.Deviation}$$
 
-Then we get variables whose mean is 0, and standard deviation is 1.
+Then we get variables whose means are 0, and standard deviations are 1 using function "scale".
 
 ```{r include=FALSE}
 cat_col <- c("SEX", "EDUCATION", "MARRIAGE",
@@ -447,7 +448,7 @@ test_set <- original_default[index_1,]
 pre_train_set <- original_default[-index_1,]
 ```
 
-We are going to use decision tree, and random forest later. They can be tuned to produce improved results by finding hyperparameters. If we tune the model using hyperparameters again and again, this might cause overfitting. To avoid this , we split the larger dataset again and produce two datasets, "train_set" and "validation_set". Split proportion is the same as before, 80% and 20%.
+We are going to use decision tree, and random forest later. They can be tuned to produce improved results by finding hyperparameters. If we tune the model using hyperparameters again and again, this might cause overfitting. To avoid this , we split the larger dataset again and produce two datasets, "train_set" and "validation_set". Split proportion is the same as before, 80% and 20% respectively.
 
 ```{r message=FALSE, include=FALSE}
 set.seed(2021, sample.kind = "Rounding")
@@ -469,124 +470,187 @@ tibble(outcome =c(0,1),
 
 ### 1 Evaluation metrics
 
-Generally speaking, overall accuracy is used to evaluate a model. But this dataset has imbalanced proportion of outcomes. Guessing all responses are 0, we calculate its confusion matrix, accuracy, sensitivity and specificity.
+Generally speaking, overall accuracy is used to evaluate a model. But this dataset has imbalanced proportion of outcomes. Guessing all responses are 0, we calculate its confusion matrix.
 
 ```{r echo=FALSE}
 base_pred <-factor(numeric(length(validation_set$DEFAULT)),levels=c("0","1"))
 #function numeric(n) produces n 0 vectors.
-confusionMatrix(base_pred, validation_set$DEFAULT)
+confusionMatrix(base_pred, validation_set$DEFAULT)$table
 #confusionMatrix(in caret package) is a function to produce confusion matrix and metrics such as accuracy 
 ```
 
-Even such a guess produces fairly good results., sensitivity (True Positive / True Positive+ False Negative) is 1.0, in contrast specificity (True Negative / True Negative + False Positive) is 0. Balanced accuracy (arithmetic mean of sensitivity and specificity) is 0.5, which is really a random guess. As such, the credit company falsely give credit to a lot of clients who will fail to repay a debt. The loss for the company would be huge.
+From this confusion matrix, we know even such a guess produces fairly good results.
 
-Therefore, our goal is to pursue more accurate accuracy than guessing all responses are 0, taking account of improving specificity. We will use both *accuracy* and *balanced accuracy* to evaluate each model.
+-   Accuracy (True positive + True Negative / Total) 0.7788
+
+-   Sensitivity (True Positive / True Positive+ False Negative) 1.0
+
+In contrast,
+
+-   Specificity (True Negative / True Negative + False Positive) 0
+
+-   Balanced accuracy (arithmetic mean of sensitivity and specificity) 0.5
+
+As such, the credit company falsely give credit to a lot of clients who will fail to repay a debt. The loss for the company would be huge. Therefore, our goal is to pursue more accurate accuracy than guessing all responses are 0, taking account of improving specificity. We will use both *accuracy* and *balanced accuracy* to evaluate each model.
 
 ### 2 Logistic regression
 
-As this is a classification, we use logistic regression. we use "glm" function. There are 24 predictors in the train_set. We use "step regression" to find the best logistic regression model.
+Firstly, we choose logistic regression. Logistic regression is commonly used in binary classification problems (outcome is 0 and 1, or True and False). As it uses logistic transformed odds, it produces outcome ranging from 0 to 1.
 
-Stepwise regression explanation. First we make null-model and full-model.
+We have 24 features in the dataset. There are many ways to deal with such many predictors. One of them is step-wise regression. This method is to repeatedly examine statistically significance of each variable in a regression model. There are three ways; forward selection, backward elimination, forward and backward elimination. Forward selection starts from no variable and add a variable step by step. Backward elimination starts from full model and subtract variables one by one. Forward and backward combines the two. One of the most convenient features of this method is we can get logistic regression results without knowing details of variables in the dataset. Firstly, we use forward and backward step wise regression, as it is commonly used. Afterwards, we will use logistic regression with fewer predictors based on our data exploration.
 
-```{r include=FALSE}
+In the step-wise regression, we make two models, null model with no predictors and full model with all predictors. Then we use "step" function to conduct step-wise regression.
+
+```{r step-wise regression, message=FALSE, warning=FALSE, include=FALSE}
 #a null model with no predictors
 null_model <- glm(DEFAULT~1, data = train_set, family = binomial(link = "logit"))
 
 #a full model using all of the potential predictors
 full_model <- glm(DEFAULT~., data = train_set, family = binomial(link = "logit"))
-```
 
-Forward and backward stepwise algorithm.
-
-```{r include=FALSE}
+#conduct step-wise regression backward and forward
 step_mdl   <- step(null_model, 
                    scope = list(lower = null_model, upper = full_model), 
                    direction = "both")
 ```
 
-Predict by using validation_set. First we predict probabilities and then classify them using cut-off 0.5.
+The step-wise regression selected the formula as follows;
 
-```{r include=FALSE}
+```{r echo=FALSE}
+#predictors used in this model
+step_mdl$formula
+```
+
+Then predict a result and make a confusion matrix.
+
+```{r echo=FALSE}
 step_prob <- predict(step_mdl, validation_set,type="response")
 step_pred <- ifelse(step_prob >0.5,1,0)
+confusionMatrix(as.factor(step_pred), validation_set$DEFAULT)$table
 ```
 
-To show accuracy we use confusionMatrix function in caret library.
+Other statistic metric are;
 
 ```{r echo=FALSE}
-confusionMatrix(as.factor(step_pred), validation_set$DEFAULT)
-```
-
-Make a table.
-
-```{r echo=FALSE}
-results <- tibble(method = "logistic regresion", 
+glm_s_results <- tibble(method = "glm step wise", 
                   Accuracy =confusionMatrix(as.factor(step_pred), validation_set$DEFAULT)$overall[1],
                   Sensitivity =confusionMatrix(as.factor(step_pred), validation_set$DEFAULT)$byClass[1],
                   Specificity =confusionMatrix(as.factor(step_pred), validation_set$DEFAULT)$byClass[2],
                   Balanced_Accuracy =confusionMatrix(as.factor(step_pred), validation_set$DEFAULT)$byClass[11])
                   
-results %>% knitr::kable()
+glm_s_results %>% knitr::kable()
 ```
 
-### 3 Decision tree default model
+Can we improve the results? In the data exploration section, we have some insights which features are important to predict the outcome. As we have seen in the correlation matrix graph, we understand predictors from PAY_0 to PAY_6 seems to be important. Regarding BILL_AMT and PAY_AMT, the structure of each feature is very similar to one another.
 
-Use CART classification and regression tree. Rpart \~ using default minsplit=20, cp=0.01.
+Bearing these in mind, we narrow down features and leave out BILL_AMT2 to BILL_AMT6 and PAY_AMT2 to PAY_AMT6. Then we predict responses using glm function.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+glm_fewer_mdl <- glm(DEFAULT ~ LIMIT_BAL + SEX + EDUCATION + MARRIAGE + AGE + 
+                    PAY_0 + PAY_2 + PAY_3 + PAY_4 + PAY_5 + PAY_6 + 
+                    BILL_AMT1 + PAY_AMT1,
+                     data= train_set, family= binomial(link = "logit"))
+
+glm_fewer_prob <- predict(glm_fewer_mdl, validation_set,type="response")
+glm_fewer_pred <- ifelse(glm_fewer_prob >0.5,1,0)
+```
+
+In this model, formula is as follows;
+
+```{r echo=FALSE}
+glm_fewer_mdl$formula
+```
+
+Confusion matrix is;
+
+```{r echo=FALSE}
+confusionMatrix(as.factor(glm_fewer_pred), validation_set$DEFAULT)$table
+```
+
+Other statistic metric are;
+
+```{r echo=FALSE}
+glm_f_results <- tibble(method = "glm fewer features",
+                  Accuracy =confusionMatrix(as.factor(glm_fewer_pred), validation_set$DEFAULT)$overall[1],
+                  Sensitivity =confusionMatrix(as.factor(glm_fewer_pred), validation_set$DEFAULT)$byClass[1],
+                  Specificity =confusionMatrix(as.factor(glm_fewer_pred), validation_set$DEFAULT)$byClass[2],
+                  Balanced_Accuracy =confusionMatrix(as.factor(glm_fewer_pred), validation_set$DEFAULT)$byClass[11])
+                  
+glm_f_results %>% knitr::kable()
+```
+
+Comparing the two logistic regression models, the later model in which some seemingly irrelevant features are left out performed better in terms of both accuracy and balanced accuracy.
+
+### 3 Decision tree
+
+A decision tree is a familiar and intuitive method. For example, if you feel sick, a physician may ask you questions following a tree chart. You are asked whether it is yes or no at each node of the chart. Then the doctor gets your health outcome.
+
+Decision tree algorithm recursively divides the dataset into partitions with similar values for the outcome. A metric is used to choose the partitions. One of decision tree R function "rpart" uses Gini index.
+
+$$
+\mbox{Gini}(j) = \sum_{k=1}^K \hat{p}_{j,k}(1-\hat{p}_{j,k})
+$$
+
+$\hat{p}_{j,k}$ as the proportion of observations in partition $\ {j}$ that are of class $\ {k}$[^17]. If there are lots of classes in the partition, Gini index, also called Gini impurity, increases up to 1. On the other hand, if there are few classes in the partition it decreases down to 0. If you predict perfectly, the index is 0.
+
+[^17]: Rafael A.Irizarry, 2021, *Introduction to Data Science,* 31.10.4 Classification (decision) trees <https://rafalab.github.io/dsbook/examples-of-algorithms.html#classification-decision-trees>
+
+We use "rpart" function to make a model, then predict the outcome. Confusion matrix is;
 
 ```{r include=FALSE}
 set.seed(2021, sample.kind = "Rounding")
 rpart_mdl <-rpart(DEFAULT ~ .,data = train_set)
 ```
 
-Predict.
+We draw a decision tree based on this model.
+
+```{r echo=FALSE, fig.height=3, fig.width=6}
+rpart.plot(rpart_mdl)
+```
+
+This model uses only PAY_O to make partitions. This means the credit company need to check a client's PAY_0. If the value is -2, -1, 0, 1, 5, they are likely to repay, otherwise, they default on the debt.
+
+Then predict the outcome, and show its confusion matrix.
 
 ```{r include=FALSE}
 rpart_pred <- predict(rpart_mdl, validation_set, type="class")
 ```
 
-Confusion Matrix.
-
 ```{r echo=FALSE}
-confusionMatrix(rpart_pred, validation_set$DEFAULT)
+confusionMatrix(rpart_pred, validation_set$DEFAULT)$table
 ```
 
-Draw decision tree rpart.plot is good function to show decision tree clearly.
+Other statistic metrics;
 
 ```{r echo=FALSE}
-rpart.plot(rpart_mdl)
+rpart_results <- tibble(method = "rpart",
+                  Accuracy =confusionMatrix(rpart_pred, validation_set$DEFAULT)$overall[1],
+                  Sensitivity =confusionMatrix(rpart_pred, validation_set$DEFAULT)$byClass[1],
+                  Specificity =confusionMatrix(rpart_pred, validation_set$DEFAULT)$byClass[2],
+                  Balanced_Accuracy =confusionMatrix(rpart_pred, validation_set$DEFAULT)$byClass[11])
+                  
+rpart_results %>% knitr::kable()
 ```
 
-Find used features.
+Compared with the previous logistic regression model, its accuracy has improved but its balanced accuracy become worse.
 
-```{r echo=FALSE}
-rpart_mdl$variable.importance
+We try to improve this result using other function "train" in caret package. When we use "train" , it conducts "cross validation" and finds optimal parameters in the decision tree algorithm.
+
+Cross validation split the dataset into k "folds" randomly. For each group, it takes the group as a test dataset, and takes other groups as a training dataset. Then it fits a model on the training set and evaluates it on the test set. This procedure is repeated until every K-fold serve as the test set. Finally it summarizes the performance of the model as the average of these procedures.
+
+"ModelLookup" function in caret package tells us what kind of parameters in rpart we can tune.
+
+```{r}
+modelLookup("rpart")
 ```
 
-This model illustrates that PAY_0 is overwhelmingly important.
+Cp stands for complexity parameter. It determines the complexity of the model. As its value gets smaller, the algorithm produces more trees. In the previous decision tree model we fit, cp is 0.01. We want to know whether cp values less than 0.01 will improve the performance.
 
-Make a table
-
-```{r echo=FALSE}
-results <- bind_rows(
-  results,
-  tibble(method="CART default",  
-         Accuracy = confusionMatrix(rpart_pred, 
-                                    validation_set$DEFAULT)$overall[1],
-         Sensitivity = confusionMatrix(rpart_pred, 
-                                       validation_set$DEFAULT)$byClass[1],
-         Specificity = confusionMatrix(rpart_pred, 
-                                       validation_set$DEFAULT)$byClass[2],
-         Balanced_Accuracy = confusionMatrix(rpart_pred, 
-                                             validation_set$DEFAULT)$byClass[11]))
-  
-results %>% knitr::kable()
+```{r eval=FALSE, include=FALSE}
+rpart_mdl$control$cp
 ```
 
-### 4 Decision tree further tuning
-
-We use "train" function in "caret" package. and tune cp. Cross validation
-
-rpart \~tuning using smaller cp, less than 0.01
+We train the dataset using "train" function.
 
 ```{r include=FALSE}
 set.seed(2021, sample.kind = "Rounding")
@@ -599,46 +663,50 @@ rpart_tuned_mdl <- train(DEFAULT ~ .,
 
 Plot cp.
 
-```{r echo=FALSE}
+```{r echo=FALSE, fig.height=3, fig.width=6}
 plot(rpart_tuned_mdl)
-opt_cp <-rpart_tuned_mdl$bestTune
 ```
 
-Draw decision tree. using rpart.plot.
+Optimal cp value is
 
 ```{r echo=FALSE}
+opt_cp <-rpart_tuned_mdl$bestTune
+opt_cp
+```
+
+Then draw a decision tree.
+
+```{r echo=FALSE, fig.height=3, fig.width=6}
 rpart.plot(rpart_tuned_mdl$finalModel)
 ```
 
-Note: numeric values are scaled
+Fit the model to the validation set and show confusion matrix.
 
-Prediction.
-
-```{r include=FALSE}
+```{r echo=FALSE}
 rpart_tuned_pred <- predict(rpart_tuned_mdl, validation_set)
+confusionMatrix(rpart_tuned_pred, validation_set$DEFAULT)$table
 ```
 
-Confusion matrix
+Other statistic metrics;
 
 ```{r echo=FALSE}
-confusionMatrix(rpart_tuned_pred, validation_set$DEFAULT)
+rpart_tuned_results <- tibble(method = "rpart tuned",
+                  Accuracy =confusionMatrix(rpart_tuned_pred, validation_set$DEFAULT)$overall[1],
+                  Sensitivity =confusionMatrix(rpart_tuned_pred, validation_set$DEFAULT)$byClass[1],
+                  Specificity =confusionMatrix(rpart_tuned_pred, validation_set$DEFAULT)$byClass[2],
+                  Balanced_Accuracy =confusionMatrix(rpart_tuned_pred, validation_set$DEFAULT)$byClass[11])
+                  
+rpart_tuned_results %>% knitr::kable()
 ```
 
-Make a table.
+Comparing two decision models, the tuned model has improved in terms of specificity and balanced accuracy. But both performed worse than logistic regression using fewer predictors in terms of balanced accuracy.
 
 ```{r echo=FALSE}
-results <- bind_rows(
-  results,
-  tibble(method="CART tuned cp",  
-         Accuracy = confusionMatrix(rpart_tuned_pred, validation_set$DEFAULT)$overall[1],
-         Sensitivity = confusionMatrix(rpart_tuned_pred, validation_set$DEFAULT)$byClass[1],
-         Specificity = confusionMatrix(rpart_tuned_pred, validation_set$DEFAULT)$byClass[2],
-         Balanced_Accuracy = confusionMatrix(rpart_tuned_pred, validation_set$DEFAULT)$byClass[11]) )
+bind_rows(rpart_results, rpart_tuned_results) %>% knitr::kable()
 
-results %>% knitr::kable()
 ```
 
-### 5 Random forest default
+### 4 Random forest
 
 Using "ranger".
 
@@ -670,7 +738,7 @@ confusionMatrix(rf_pred, validation_set$DEFAULT)
 
 Make a table.
 
-```{r echo=FALSE}
+```{r eval=FALSE, include=FALSE}
 results <- bind_rows(
   results,
   tibble(method="random forest default",  
@@ -681,8 +749,6 @@ results <- bind_rows(
 
 results %>% knitr::kable()
 ```
-
-### 6 Random forest cross validation
 
 Grid search
 
@@ -707,7 +773,7 @@ rf_cv_mdl <- train( DEFAULT~ .,
 
 Plot.
 
-```{r echo=FALSE}
+```{r echo=FALSE, fig.height=3, fig.width=6}
 plot(rf_cv_mdl)
 ```
 
@@ -725,7 +791,7 @@ confusionMatrix(rf_cv_pred, validation_set$DEFAULT)
 
 Make a table.
 
-```{r echo=FALSE}
+```{r eval=FALSE, include=FALSE}
 results <- bind_rows( results,
                       tibble(
                         method="random forest tuned ",
@@ -753,7 +819,7 @@ confusionMatrix(final_pred_rf, test_set$DEFAULT)$byClass
 
 Make a table.
 
-```{r echo=FALSE}
+```{r eval=FALSE, include=FALSE}
 final_results <- tibble( method ="CART default",
                          Accuracy =confusionMatrix(final_pred_rpart, test_set$DEFAULT)$overall[1],
                          Sensitivity =confusionMatrix(final_pred_rpart, test_set$DEFAULT)$byClass[1],
