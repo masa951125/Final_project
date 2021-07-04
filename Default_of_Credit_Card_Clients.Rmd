@@ -302,13 +302,11 @@ graph_p2 <-
   geom_bar() +
   ggtitle("PAY_2")
 
-
 #PAY_3
 graph_p3 <-  
   original_default %>% ggplot(aes(x=as.factor(PAY_3))) +
   geom_bar() +
   ggtitle("PAY_3")
-
 
 #PAY_4
 graph_p4 <-
@@ -474,9 +472,8 @@ Generally speaking, overall accuracy is used to evaluate a model. But this datas
 
 ```{r echo=FALSE}
 base_pred <-factor(numeric(length(validation_set$DEFAULT)),levels=c("0","1"))
-#function numeric(n) produces n 0 vectors.
+
 confusionMatrix(base_pred, validation_set$DEFAULT)$table
-#confusionMatrix(in caret package) is a function to produce confusion matrix and metrics such as accuracy 
 ```
 
 From this confusion matrix, we know even such a guess produces fairly good results.
@@ -491,6 +488,13 @@ In contrast,
 
 -   Balanced accuracy (arithmetic mean of sensitivity and specificity) 0.5
 
+```{r include=FALSE}
+confusionMatrix(base_pred, test_set$DEFAULT)$overall[1] #accuracy
+confusionMatrix(base_pred, test_set$DEFAULT)$byClass[1] #sensitivity
+confusionMatrix(base_pred, test_set$DEFAULT)$byClass[2] #specificity
+confusionMatrix(base_pred, test_set$DEFAULT)$byClass[11] #balanced accuracy
+```
+
 As such, the credit company falsely give credit to a lot of clients who will fail to repay a debt. The loss for the company would be huge. Therefore, our goal is to pursue more accurate accuracy than guessing all responses are 0, taking account of improving specificity. We will use both *accuracy* and *balanced accuracy* to evaluate each model.
 
 ### 2 Logistic regression
@@ -499,7 +503,7 @@ Firstly, we choose logistic regression. Logistic regression is commonly used in 
 
 We have 24 features in the dataset. There are many ways to deal with such many predictors. One of them is step-wise regression. This method is to repeatedly examine statistically significance of each variable in a regression model. There are three ways; forward selection, backward elimination, forward and backward elimination. Forward selection starts from no variable and add a variable step by step. Backward elimination starts from full model and subtract variables one by one. Forward and backward combines the two. One of the most convenient features of this method is we can get logistic regression results without knowing details of variables in the dataset. Firstly, we use forward and backward step wise regression, as it is commonly used. Afterwards, we will use logistic regression with fewer predictors based on our data exploration.
 
-In the step-wise regression, we make two models, null model with no predictors and full model with all predictors. Then we use "step" function to conduct step-wise regression.
+In the step-wise regression, we make two models, null model with no predictors and full model with all predictors. Then we use "step" function to conduct step-wise regression. The result;
 
 ```{r step-wise regression, message=FALSE, warning=FALSE, include=FALSE}
 #a null model with no predictors
@@ -514,12 +518,19 @@ step_mdl   <- step(null_model,
                    direction = "both")
 ```
 
-The step-wise regression selected the formula as follows;
-
 ```{r echo=FALSE}
-#predictors used in this model
-step_mdl$formula
+summary(step_mdl)
 ```
+
+From this, we understand that;
+
+-   Used variables:
+
+    LIMIT_BAL, MARRIAGE, EDUCATION, SEX, PAY_0, PAY_3, PAY_4, PAY_5, PAY_6, PAY_AMT1, PAY_AMT2, PAY_AMT3, PAY_AMT5, BILL_AMT3, BILL_AMT5
+
+-   Important variables :
+
+    PAY_0( whether its values are -1, 1, 2, 3, 4), PAY_3( whether its values are 2), PAY_6( whether its values are 0), LIMIT_BAL, BILL_AMT3, PAY_AMT1, PAY_AMT2, SEX(whether a client is a female or not)
 
 Then predict a result and make a confusion matrix.
 
@@ -543,27 +554,30 @@ glm_s_results %>% knitr::kable()
 
 Can we improve the results? In the data exploration section, we have some insights which features are important to predict the outcome. As we have seen in the correlation matrix graph, we understand predictors from PAY_0 to PAY_6 seems to be important. Regarding BILL_AMT and PAY_AMT, the structure of each feature is very similar to one another.
 
-Bearing these in mind, we narrow down features and leave out BILL_AMT2 to BILL_AMT6 and PAY_AMT2 to PAY_AMT6. Then we predict responses using glm function.
+Bearing these in mind, we narrow down features and leave out BILL_AMT2 to BILL_AMT6 and PAY_AMT2 to PAY_AMT6. Then we predict responses using glm function. The result;
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 glm_fewer_mdl <- glm(DEFAULT ~ LIMIT_BAL + SEX + EDUCATION + MARRIAGE + AGE + 
                     PAY_0 + PAY_2 + PAY_3 + PAY_4 + PAY_5 + PAY_6 + 
                     BILL_AMT1 + PAY_AMT1,
                      data= train_set, family= binomial(link = "logit"))
+```
 
+```{r echo=FALSE}
+summary(glm_fewer_mdl)
+```
+
+From this, we understand that;
+
+-   Important variables :
+
+    LIMIT_BAL, SEX(whether a client is a female or not), PAY_0( whether its values are -1, 1, 2, 3, 4), PAY_3( whether its values are 2), PAY_6( whether its values are 0), BILL_AMT1, PAY_AMT1
+
+Then fit the model to the validation set and show its confusion matrix.
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
 glm_fewer_prob <- predict(glm_fewer_mdl, validation_set,type="response")
 glm_fewer_pred <- ifelse(glm_fewer_prob >0.5,1,0)
-```
-
-In this model, formula is as follows;
-
-```{r echo=FALSE}
-glm_fewer_mdl$formula
-```
-
-Confusion matrix is;
-
-```{r echo=FALSE}
 confusionMatrix(as.factor(glm_fewer_pred), validation_set$DEFAULT)$table
 ```
 
@@ -583,7 +597,7 @@ Comparing the two logistic regression models, the later model in which some seem
 
 ### 3 Decision tree
 
-A decision tree is a familiar and intuitive method. For example, if you feel sick, a physician may ask you questions following a tree chart. You are asked whether it is yes or no at each node of the chart. Then the doctor gets your health outcome.
+A decision tree is a familiar and intuitive method. For example, if you feel sick, a physician may ask you questions following a tree chart. You are asked whether it is yes or no at each node of the chart. After following the nodes, the doctor gets your health outcome.
 
 Decision tree algorithm recursively divides the dataset into partitions with similar values for the outcome. A metric is used to choose the partitions. One of decision tree R function "rpart" uses Gini index.
 
@@ -591,15 +605,19 @@ $$
 \mbox{Gini}(j) = \sum_{k=1}^K \hat{p}_{j,k}(1-\hat{p}_{j,k})
 $$
 
-$\hat{p}_{j,k}$ as the proportion of observations in partition $\ {j}$ that are of class $\ {k}$[^17]. If there are lots of classes in the partition, Gini index, also called Gini impurity, increases up to 1. On the other hand, if there are few classes in the partition it decreases down to 0. If you predict perfectly, the index is 0.
+$\hat{p}_{j,k}$ as the proportion of observations in partition $\ {j}$ that are of class $\ {k}$.[^17] If there are lots of classes in the partition, Gini index, also called Gini impurity, increases up to 1. On the other hand, if there are few classes in the partition it decreases down to 0. If you predict perfectly, the index is 0.
 
-[^17]: Rafael A.Irizarry, 2021, *Introduction to Data Science,* 31.10.4 Classification (decision) trees <https://rafalab.github.io/dsbook/examples-of-algorithms.html#classification-decision-trees>
+[^17]: Irizarry, Rafael A, "Introduction to Data Science: Data Analysis and Prediction Algorithms with R, 31.10.4 Classification (decision) trees". *Internet archive*, <https://rafalab.github.io/dsbook/examples-of-algorithms.html#classification-decision-trees>
 
-We use "rpart" function to make a model, then predict the outcome. Confusion matrix is;
+We use "rpart" function to make a model, then predict the outcome.
 
 ```{r include=FALSE}
 set.seed(2021, sample.kind = "Rounding")
 rpart_mdl <-rpart(DEFAULT ~ .,data = train_set)
+```
+
+```{r echo=FALSE}
+rpart_mdl
 ```
 
 We draw a decision tree based on this model.
@@ -632,13 +650,13 @@ rpart_results <- tibble(method = "rpart",
 rpart_results %>% knitr::kable()
 ```
 
-Compared with the previous logistic regression model, its accuracy has improved but its balanced accuracy become worse.
+Compared with the previous logistic regression models, its accuracy has improved but its balanced accuracy become worse.
 
 We try to improve this result using other function "train" in caret package. When we use "train" , it conducts "cross validation" and finds optimal parameters in the decision tree algorithm.
 
-Cross validation split the dataset into k "folds" randomly. For each group, it takes the group as a test dataset, and takes other groups as a training dataset. Then it fits a model on the training set and evaluates it on the test set. This procedure is repeated until every K-fold serve as the test set. Finally it summarizes the performance of the model as the average of these procedures.
+One of the cross validation methods is k-fold cross validation. It splits the dataset into k "folds" randomly. For each group, it takes the group as a test dataset, and takes other groups as a training dataset. Then it fits a model on the training set and evaluates it on the test set. This procedure is repeated until every K-fold serve as the test set. Finally it summarizes the performance of the model as the average of these procedures.
 
-"ModelLookup" function in caret package tells us what kind of parameters in rpart we can tune.
+"ModelLookup" function in caret package tells us what parameters in rpart we can tune.
 
 ```{r}
 modelLookup("rpart")
@@ -650,7 +668,7 @@ Cp stands for complexity parameter. It determines the complexity of the model. A
 rpart_mdl$control$cp
 ```
 
-We train the dataset using "train" function.
+We train the dataset using "train" function. This function conducts 10 folds cross validation as a default.
 
 ```{r include=FALSE}
 set.seed(2021, sample.kind = "Rounding")
@@ -661,17 +679,14 @@ rpart_tuned_mdl <- train(DEFAULT ~ .,
                       data = train_set)
 ```
 
+```{r echo=FALSE}
+rpart_tuned_mdl
+```
+
 Plot cp.
 
 ```{r echo=FALSE, fig.height=3, fig.width=6}
 plot(rpart_tuned_mdl)
-```
-
-Optimal cp value is
-
-```{r echo=FALSE}
-opt_cp <-rpart_tuned_mdl$bestTune
-opt_cp
 ```
 
 Then draw a decision tree.
@@ -679,6 +694,8 @@ Then draw a decision tree.
 ```{r echo=FALSE, fig.height=3, fig.width=6}
 rpart.plot(rpart_tuned_mdl$finalModel)
 ```
+
+As PAY variables are factored and turned into a dummy variable, a node "PAY_02", for example, is asking whether a client's PAY_0 is "-1" or not. "-1" is the second level in PAY_0 original column.
 
 Fit the model to the validation set and show confusion matrix.
 
@@ -708,134 +725,167 @@ bind_rows(rpart_results, rpart_tuned_results) %>% knitr::kable()
 
 ### 4 Random forest
 
-Using "ranger".
+Decision tree algorithm is easy to understand as it follow human decision making process. However, it "can easily over-train" and "is not very flexible."[^18] To improve this, we introduce random forest algorithm.
+
+[^18]: Irizarry, Rafael A, "Introduction to Data Science: Data Analysis and Prediction Algorithms with R, 31.10.4 Classification (decision) trees". *Internet archive*, [\<https://rafalab.github.io/dsbook/examples-of-algorithms.html\#classification-decision-trees\>](https://rafalab.github.io/dsbook/examples-of-algorithms.html#classification-decision-trees){.uri}
+
+Random forest is one of the most popular machine learning algorithms. As its name implies, it makes multiple trees "**randomly** different" from a dataset, then produce a final prediction based on the average prediction of "combination of trees", namely "**forest**".[^19]
+
+[^19]: Irizarry, Rafael A, "Introduction to Data Science: Data Analysis and Prediction Algorithms with R, 31.11 Random forests". *Internet archive*, <https://rafalab.github.io/dsbook/examples-of-algorithms.html#random-forests>
+
+In this paper, we use "ranger" function. And show the model details;
 
 ```{r include=FALSE}
 set.seed(2021, sample.kind = "Rounding")
 rf_mdl <- ranger(
   formula = DEFAULT ~ ., 
   data = train_set,
+  importance = "impurity",#use gini index
   probability = F)
 ```
-
-Model details.
 
 ```{r echo=FALSE}
 rf_mdl
 ```
 
-Prediction.
+Plot the variables' importance;
 
-```{r include=FALSE}
-rf_pred <- predict(rf_mdl, validation_set)$predictions
+```{r echo=FALSE, fig.height=3, fig.width=6}
+imp_df <- data.frame(Variable = names(rf_mdl$variable.importance),
+                   Importance = as.numeric(rf_mdl$variable.importance)) 
+
+ggplot(imp_df, aes(x=Variable, y=Importance)) +
+  geom_bar(stat="identity") +coord_flip()
 ```
 
-Confusion matrix
+As we saw in the decision tree model, PAY_0 is considerably important compared with other features. As for other features, BILL_AMT1, PAY_AMT1, and LIMIT_BAL, and AGE are important.
+
+Then fit the model to the validation set and show its confusion matrix.
 
 ```{r echo=FALSE}
-confusionMatrix(rf_pred, validation_set$DEFAULT)
+rf_pred <- predict(rf_mdl, validation_set)$predictions
+confusionMatrix(rf_pred, validation_set$DEFAULT)$table
 ```
 
-Make a table.
+Other statistic metrics;.
 
-```{r eval=FALSE, include=FALSE}
-results <- bind_rows(
-  results,
-  tibble(method="random forest default",  
-         Accuracy = confusionMatrix(rf_pred, validation_set$DEFAULT)$overall[1],
-         Sensitivity = confusionMatrix(rf_pred, validation_set$DEFAULT)$byClass[1],
-         Specificity = confusionMatrix(rf_pred, validation_set$DEFAULT)$byClass[2],
-         Balanced_Accuracy = confusionMatrix(rf_pred, validation_set$DEFAULT)$byClass[11]) )
-
-results %>% knitr::kable()
+```{r echo=FALSE}
+rf_results <- tibble(method = "random forest",
+                  Accuracy =confusionMatrix(rf_pred, validation_set$DEFAULT)$overall[1],
+                  Sensitivity =confusionMatrix(rf_pred, validation_set$DEFAULT)$byClass[1],
+                  Specificity =confusionMatrix(rf_pred, validation_set$DEFAULT)$byClass[2],
+                  Balanced_Accuracy =confusionMatrix(rf_pred, validation_set$DEFAULT)$byClass[11])
+                  
+rf_results %>% knitr::kable()
 ```
 
-Grid search
+The results has been much improved, especially specificity, compared to other models. Can we improve the result further? Using "modelLookup", we can find parameters which can be tuned.
 
 ```{r echo=FALSE}
 modelLookup("ranger")
 ```
 
-Make a model.
+Mtry is a number of variables to possibly split at in each node. Splitrule is a splitting rule. Min.node.size is a minimal node size. In the previous random forest model, its mtry is 4, we used Gini index as a splitting rule, and minimal node size is 1. In the following model, we compare mtry ranging from 3 to 10 in terms of accuracy.
 
 ```{r include=FALSE}
 set.seed(2021, sample.kind = "Rounding")
 rf_cv_mdl <- train( DEFAULT~ .,
                     data = train_set,
                     method = 'ranger',
-                    metric = 'Accuracy',
-                    num.trees = 1000,
+                    metric = 'Accuracy', 
+                    #we have compared accuracy with other models
+                    importance = "impurity",
                     tuneGrid = expand.grid(
-                      mtry = 3:10, splitrule = 'gini', min.node.size = 1), 
-                    trControl = trainControl(method = 'cv', number = 5))
+                    mtry = 3:10, splitrule = 'gini', min.node.size = 1), 
+                    trControl = trainControl(method = 'cv'))
 
 ```
 
-Plot.
+```{r echo=FALSE}
+rf_cv_mdl
+```
+
+Plot mtry and accuracy.
 
 ```{r echo=FALSE, fig.height=3, fig.width=6}
 plot(rf_cv_mdl)
 ```
 
-Prediction.
+Plot the variables' importance;
 
-```{r include=FALSE}
-rf_cv_pred <- predict(rf_cv_mdl, validation_set)
+```{r echo=FALSE, fig.height=10, fig.width=6}
+imp_cv_df <- data.frame(Variable = names(rf_cv_mdl$finalModel$variable.importance),
+                   Importance = as.numeric(rf_cv_mdl$finalModel$variable.importance))
+
+ggplot(imp_cv_df, aes(x=Variable, y=Importance)) +
+  geom_bar(stat="identity") +coord_flip()
 ```
 
-Confusion Matrix
+Contrary to the previous model, not PAY_0 but PAY_02's importance is outstanding.
+
+Then fit the model to the validation set and show confusion matrix;
 
 ```{r echo=FALSE}
-confusionMatrix(rf_cv_pred, validation_set$DEFAULT)
+rf_cv_pred <- predict(rf_cv_mdl, validation_set)
+confusionMatrix(rf_cv_pred, validation_set$DEFAULT)$table
 ```
 
-Make a table.
+Other statistic metrics;
 
-```{r eval=FALSE, include=FALSE}
-results <- bind_rows( results,
-                      tibble(
-                        method="random forest tuned ",
-Accuracy = confusionMatrix(rf_cv_pred, validation_set$DEFAULT)$overall[1],
-Sensitivity = confusionMatrix(rf_cv_pred, validation_set$DEFAULT)$byClass[1],
-Specificity = confusionMatrix(rf_cv_pred, validation_set$DEFAULT)$byClass[2],
-Balanced_Accuracy= confusionMatrix(rf_cv_pred, validation_set$DEFAULT)$byClass[11]) )
+```{r echo=FALSE}
+rf_tuned_results <- tibble(method = "random forest tuned",
+                  Accuracy =confusionMatrix(rf_cv_pred, validation_set$DEFAULT)$overall[1],
+                  Sensitivity =confusionMatrix(rf_cv_pred, validation_set$DEFAULT)$byClass[1],
+                  Specificity =confusionMatrix(rf_cv_pred, validation_set$DEFAULT)$byClass[2],
+                  Balanced_Accuracy =confusionMatrix(rf_cv_pred, validation_set$DEFAULT)$byClass[11])
+                  
+rf_tuned_results %>% knitr::kable()
+```
 
-results %>% knitr::kable()
+Comparing these two random forest models, the results of the tuned model gets worse than the default model in terms of both accuracy and balanced accuracy. There occurred over fitting in the tuned model.
+
+```{r echo=FALSE}
+bind_rows(rf_results, rf_tuned_results) %>% knitr::kable()
+
 ```
 
 ## Evaluation
 
-Best performance in terms of balanced accuracy is "random forest default model" Best performance in terms of accuracy is "CART default model" Then evaluate by using test_set.
+We look at the table in which the results of our 6 models are shown.
 
-```{r include=FALSE}
-final_pred_rpart <- predict(rpart_mdl, test_set,type="class")
-confusionMatrix(final_pred_rpart, test_set$DEFAULT)
+```{r echo=FALSE}
+bind_rows(glm_s_results, glm_f_results, rpart_results, rpart_tuned_results, rf_results, rf_tuned_results)%>% knitr::kable()
 ```
 
-```{r include=FALSE}
-final_pred_rf <-predict(rf_mdl, test_set)$predictions
-confusionMatrix(final_pred_rf, test_set$DEFAULT)$byClass
+Among them, the best performance in terms of both accuracy and balanced accuracy is produced by "**random forest default model**". As we mentioned before, **PAY_0** is the most important variables compared with others. Then follows **BILL_AMT1**, **PAY_AMT1**, and **LIMIT_BAL**, and **AGE.**
+
+We fit this model to the test set and extract final evaluation.
+
+```{r echo=FALSE}
+final_rf_pred <- predict(rpart_mdl, test_set,type="class")
 ```
 
-Make a table.
+Final statistic metrics are as follows;
 
-```{r eval=FALSE, include=FALSE}
-final_results <- tibble( method ="CART default",
-                         Accuracy =confusionMatrix(final_pred_rpart, test_set$DEFAULT)$overall[1],
-                         Sensitivity =confusionMatrix(final_pred_rpart, test_set$DEFAULT)$byClass[1],
-                         Specificity =confusionMatrix(final_pred_rpart, test_set$DEFAULT)$byClass[2],
-                         Balanced_Accuracy = confusionMatrix(final_pred_rpart, test_set$DEFAULT)$byClass[11])
-
-final_results <-  bind_rows( final_results, 
-                             tibble( method ="Random forest default",
-                             Accuracy =confusionMatrix(final_pred_rf, test_set$DEFAULT)$overall[1],
-                             Sensitivity =confusionMatrix(final_pred_rf, test_set$DEFAULT)$byClass[1],
-                             Specificity =confusionMatrix(final_pred_rf, test_set$DEFAULT)$byClass[2],
-                             Balanced_Accuracy = confusionMatrix(final_pred_rf, test_set$DEFAULT)$byClass[11]))
-
-final_results %>% knitr::kable()
+```{r echo=FALSE}
+final_results <- tibble( method ="final random forest",
+                         Accuracy =confusionMatrix(final_rf_pred, test_set$DEFAULT)$overall[1],
+                         Sensitivity =confusionMatrix(final_rf_pred, test_set$DEFAULT)$byClass[1],
+                         Specificity =confusionMatrix(final_rf_pred, test_set$DEFAULT)$byClass[2],
+                         Balanced_Accuracy = confusionMatrix(final_rf_pred, test_set$DEFAULT)$byClass[11]) %>% knitr::kable()
+final_results
 ```
+
+Fitting the model to the test set, we get **accuracy 0.8226962** and **balanced accuracy 0.6471006**. This results outperformed considerably our first guess (guessing all outcomes are 0), accuracy 0.7788 and balanced accuracy 0.5.
 
 ## Conclusion
 
-\#\#\#
+In this paper, we collected an open data, "Default of Credit Card Clients Dataset" and explored its information seeking for insights which contributed to the model making. We used three methods, logistic regression, decision tree, and random forest. In each method, we tried to improve the results by changing variables and tuning hyperparameters. As its outcomes are imbalanced, we used balanced accuracy to compare the models results.
+
+Random forest algorithm showed the best performance. Fitting it to the test set, we got accuracy 0.8226962 and balanced accuracy 0.6471006. But when tuned, the model showed over-fitted results. The logistic regression models outperform the decision tree models. As well as the random forest models, the default decision tree model showed better performance than the tuned model.
+
+As we use rather simple methods in the paper, we assume limitations are revealed. Firstly, we used variables almost as they are. But some variables, for example, PAY, PAY_AMT,and BILL_AMT, seem to have some relations. If we tweak these variables, this would produce more accurate results.
+
+Moreover, these variables, PAY, PAY_AMT,and BILL_AMT, are historical data over a half year. If we can look into these historical changes further, we might be able to acquire more accurate results.
+
+Finally, from a business point of view, overall economic condition may play a very important role in predicting people's financial behavior. In the late 2000s, many people could not afford to pay their loans. On the other hand, when economy is booming, people repay the debt easily. Of course, our dataset did not have such information, but if we want to make a more credible model, we need to consider what kind of data is offered.
