@@ -275,16 +275,22 @@ ggplot(data=original_default, aes(BILL_AMT1,fill= DEFAULT)) +
 b1 <- ggplot(data=original_default, aes(BILL_AMT1)) +geom_histogram(bins=30)+
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
 #x axis labels are skewed to avoid overlapping
+
 b2 <- ggplot(data=original_default, aes(BILL_AMT2)) +geom_histogram(bins=30)+
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+
 b3 <- ggplot(data=original_default, aes(BILL_AMT3)) +geom_histogram(bins=30)+
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+
 b4 <- ggplot(data=original_default, aes(BILL_AMT4)) +geom_histogram(bins=30)+
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+
 b5 <- ggplot(data=original_default, aes(BILL_AMT5)) +geom_histogram(bins=30)+
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+
 b6 <- ggplot(data=original_default, aes(BILL_AMT6)) +geom_histogram(bins=30)+
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+
 #grid.arrange in gridExtra package to draw two graphs side by side
 #using nrow(how many graphs placed horizontally) 
 #and ncol(how many graphs placed vertically) arguments)
@@ -308,16 +314,22 @@ mean(original_default$PAY_AMT1==0)
 p1 <- ggplot(data=original_default, aes(PAY_AMT1)) +geom_histogram(bins=30)+
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
 #x axis labels are skewed to avoid overlapping
+
 p2 <- ggplot(data=original_default, aes(PAY_AMT2)) +geom_histogram(bins=30)+
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
 p3 <- ggplot(data=original_default, aes(PAY_AMT3)) +geom_histogram(bins=30)+
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
 p4 <- ggplot(data=original_default, aes(PAY_AMT4)) +geom_histogram(bins=30)+
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
 p5 <- ggplot(data=original_default, aes(PAY_AMT5)) +geom_histogram(bins=30)+
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
 p6 <- ggplot(data=original_default, aes(PAY_AMT6)) +geom_histogram(bins=30)+
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
 #grid.arrange in gridExtra package to draw two graphs side by side
 #using nrow(how many graphs placed horizontally) 
 #and ncol(how many graphs placed vertically) arguments)
@@ -371,7 +383,8 @@ pre_train_set <- original_default[-index_1,]
 
 
 #"set seed" to fixate results as we will use random sampling
-set.seed(2021, sample.kind = "Rounding")
+# set.seed(2021) if using R 3.5 or earlier
+set.seed(2021, sample.kind = "Rounding") # if using R 3.6 or later
 
 #split again
 index_2 <- createDataPartition(pre_train_set$DEFAULT, p=0.2, list=F, times=1)
@@ -477,7 +490,8 @@ glm_s_results %>% knitr::kable() #show in a table
 ###############
 
 #"rpart" function in rpart package makes a decision tree model
-set.seed(2021, sample.kind = "Rounding")
+# set.seed(2021) if using R 3.5 or earlier
+set.seed(2021, sample.kind = "Rounding") # if using R 3.6 or later
 rpart_mdl <-rpart(DEFAULT ~ .,data = train_set)
 
 #show model information
@@ -512,7 +526,8 @@ rpart_mdl$control$cp
 #we use "train" function in caret package.
 #as we do not define the number of "cV(cross validation)", 
 #it conducts 10 folds(default) cross validation.
-set.seed(2021, sample.kind = "Rounding")
+# set.seed(2021) if using R 3.5 or earlier
+set.seed(2021, sample.kind = "Rounding") # if using R 3.6 or later
 rpart_tuned_mdl <- train(DEFAULT ~ ., 
                       method = "rpart", 
                       tuneGrid = data.frame(cp = seq(0, 0.01, len = 25)),
@@ -556,7 +571,8 @@ bind_rows(rpart_results, rpart_tuned_results) %>% knitr::kable()
 ###############
 
 #make random forest model using "ranger" function in ranger package
-set.seed(2021, sample.kind = "Rounding")
+# set.seed(2021) if using R 3.5 or earlier
+set.seed(2021, sample.kind = "Rounding") # if using R 3.6 or later
 rf_mdl <- ranger(
   formula = DEFAULT ~ ., 
   data = train_set,
@@ -597,7 +613,8 @@ modelLookup("ranger")
 #we use "train" function in caret package.
 #as we do not define the number of "cV(cross validation)", 
 #it conducts 10 folds(default) cross validation.
-set.seed(2021, sample.kind = "Rounding")
+# set.seed(2021) if using R 3.5 or earlier
+set.seed(2021, sample.kind = "Rounding") # if using R 3.6 or later
 rf_cv_mdl <- train( DEFAULT~ .,
                     data = train_set,
                     method = 'ranger',
