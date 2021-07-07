@@ -19,7 +19,9 @@ if (!require(caret)){install.packages("caret")
 }
 #cross validation 
 
-if(!require(rpart)) install.packages("rpart") 
+if(!require(rpart)) {install.packages("rpart") 
+  library(rpart)
+}
 #to make decision tree model
 
 if (!require(rpart.plot)){install.packages("rpart.plot")
@@ -270,18 +272,19 @@ ggplot(data=original_default, aes(BILL_AMT1,fill= DEFAULT)) +
   geom_histogram(bins=30)# use 30 bins
 
 #draw each BILL_AMT graph and stored. use 30 bins
-b1 <- ggplot(data=original_default, aes(BILL_AMT1)) +geom_histogram(bins=30)
-
-b2 <- ggplot(data=original_default, aes(BILL_AMT2)) +geom_histogram(bins=30)
-
-b3 <- ggplot(data=original_default, aes(BILL_AMT3)) +geom_histogram(bins=30)
-
-b4 <- ggplot(data=original_default, aes(BILL_AMT4)) +geom_histogram(bins=30)
-
-b5 <- ggplot(data=original_default, aes(BILL_AMT5)) +geom_histogram(bins=30)
-
-b6 <- ggplot(data=original_default, aes(BILL_AMT6)) +geom_histogram(bins=30)
-
+b1 <- ggplot(data=original_default, aes(BILL_AMT1)) +geom_histogram(bins=30)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+#x axis labels are skewed to avoid overlapping
+b2 <- ggplot(data=original_default, aes(BILL_AMT2)) +geom_histogram(bins=30)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+b3 <- ggplot(data=original_default, aes(BILL_AMT3)) +geom_histogram(bins=30)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+b4 <- ggplot(data=original_default, aes(BILL_AMT4)) +geom_histogram(bins=30)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+b5 <- ggplot(data=original_default, aes(BILL_AMT5)) +geom_histogram(bins=30)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+b6 <- ggplot(data=original_default, aes(BILL_AMT6)) +geom_histogram(bins=30)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
 #grid.arrange in gridExtra package to draw two graphs side by side
 #using nrow(how many graphs placed horizontally) 
 #and ncol(how many graphs placed vertically) arguments)
@@ -298,19 +301,23 @@ summary(original_default$PAY_AMT1)
 ggplot(data=original_default, aes(PAY_AMT1,fill= DEFAULT)) +
   geom_histogram(bins=30)# use 30 bins
 
+#proportion of clients whose PAY_AMT is 0
+mean(original_default$PAY_AMT1==0)
+
 #draw all PAY_AMT graphs and stored. use 30 bins
-p1 <- ggplot(data=original_default, aes(PAY_AMT1)) +geom_histogram(bins=30)
-
-p2 <- ggplot(data=original_default, aes(PAY_AMT2)) +geom_histogram(bins=30)
-
-p3 <- ggplot(data=original_default, aes(PAY_AMT3)) +geom_histogram(bins=30)
-
-p4 <- ggplot(data=original_default, aes(PAY_AMT4)) +geom_histogram(bins=30)
-
-p5 <- ggplot(data=original_default, aes(PAY_AMT5)) +geom_histogram(bins=30)
-
-p6 <- ggplot(data=original_default, aes(PAY_AMT6)) +geom_histogram(bins=30)
-
+p1 <- ggplot(data=original_default, aes(PAY_AMT1)) +geom_histogram(bins=30)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+#x axis labels are skewed to avoid overlapping
+p2 <- ggplot(data=original_default, aes(PAY_AMT2)) +geom_histogram(bins=30)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+p3 <- ggplot(data=original_default, aes(PAY_AMT3)) +geom_histogram(bins=30)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+p4 <- ggplot(data=original_default, aes(PAY_AMT4)) +geom_histogram(bins=30)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+p5 <- ggplot(data=original_default, aes(PAY_AMT5)) +geom_histogram(bins=30)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+p6 <- ggplot(data=original_default, aes(PAY_AMT6)) +geom_histogram(bins=30)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 #grid.arrange in gridExtra package to draw two graphs side by side
 #using nrow(how many graphs placed horizontally) 
 #and ncol(how many graphs placed vertically) arguments)
@@ -388,60 +395,24 @@ tibble(outcome =c(0,1),
 ####################
 
 #make a factor vector, all values are 0 (non_default) 
-base_pred <-factor(numeric(length(test_set$DEFAULT)),levels=c("0","1"))
+base_pred <-factor(numeric(length(validation_set$DEFAULT)),levels=c("0","1"))
 #function numeric(n) produces n 0 vectors.
 
 #make a confusion matrix using "confusionMatrix" function in caret package
-confusionMatrix(base_pred, test_set$DEFAULT)$table
+confusionMatrix(base_pred, validation_set$DEFAULT)$table
 
 #showing statistical metrics
-confusionMatrix(base_pred, test_set$DEFAULT)$overall[1] #accuracy
-confusionMatrix(base_pred, test_set$DEFAULT)$byClass[1] #sensitivity
-confusionMatrix(base_pred, test_set$DEFAULT)$byClass[2] #specificity
-confusionMatrix(base_pred, test_set$DEFAULT)$byClass[11] #balanced accuracy
+confusionMatrix(base_pred, validation_set$DEFAULT)$overall[1] #accuracy
+confusionMatrix(base_pred, validation_set$DEFAULT)$byClass[1] #sensitivity
+confusionMatrix(base_pred, validation_set$DEFAULT)$byClass[2] #specificity
+confusionMatrix(base_pred, validation_set$DEFAULT)$byClass[11] #balanced accuracy
 
 #####################
 #logistic regression 
 #####################
-
-#stepwise regression
-#a null model with no predictors using "glm" function
-null_model <- glm(DEFAULT~1, data = train_set, family = binomial(link = "logit"))
-
-#a full model using all of the potential predictors using "glm" function
-full_model <- glm(DEFAULT~., data = train_set, family = binomial(link = "logit"))
-
-#stepwise logistic regression. function "step" conducts stepwise regression
-step_mdl   <- step(null_model, 
-                   scope = list(lower = null_model, upper = full_model), 
-                   direction = "both") #in this case, forward and backward 
-
-#show summary of the model
-summary(step_mdl)
-
-#fit the model using "predict" function
-step_prob <- predict(step_mdl, validation_set,type="response")
-#type ="response" returns probability
-
-step_pred <- ifelse(step_prob >0.5,1,0) 
-#"ifelse" function. if the probability is more than 0.5, it produces 1, otherwise 0.
-
-#show confusion matrix
-confusionMatrix(as.factor(step_pred), validation_set$DEFAULT)$table
-
-#show metrics, accuracy, sensitivity, specificity, balanced accuracy
-glm_s_results <- tibble(method = "glm step wise", 
-                        Accuracy =confusionMatrix(as.factor(step_pred), validation_set$DEFAULT)$overall[1],
-                        Sensitivity =confusionMatrix(as.factor(step_pred), validation_set$DEFAULT)$byClass[1],
-                        Specificity =confusionMatrix(as.factor(step_pred), validation_set$DEFAULT)$byClass[2],
-                        Balanced_Accuracy =confusionMatrix(as.factor(step_pred), validation_set$DEFAULT)$byClass[11])
-
-glm_s_results %>% knitr::kable() #show in a table
-
 #fewer variable logistic regression model using "glm" function
 glm_fewer_mdl <- glm(DEFAULT ~ LIMIT_BAL + SEX + EDUCATION + MARRIAGE + AGE + 
-                               PAY_0 + PAY_2 + PAY_3 + PAY_4 + PAY_5 + PAY_6 + 
-                               BILL_AMT1 + PAY_AMT1,
+                       PAY_0 +  PAY_AMT1 + BILL_AMT1,
                      data= train_set, family= binomial(link = "logit"))
 
 #show summary of the model
@@ -466,6 +437,40 @@ glm_f_results <- tibble(method = "glm fewer features",
 
 glm_f_results %>% knitr::kable() 
 #show in a table using "kable" function in knitr package
+
+#stepwise regression
+#a null model with no predictors using "glm" function
+null_model <- glm(DEFAULT~1, data = train_set, family = binomial(link = "logit"))
+
+#a full model using all of the potential predictors using "glm" function
+full_model <- glm(DEFAULT~., data = train_set, family = binomial(link = "logit"))
+
+#stepwise logistic regression. function "step" conducts stepwise regression
+step_mdl   <- step(null_model, 
+                   scope = formula(full_model), 
+                   direction = "both") #in this case, forward and backward 
+
+#show summary of the model
+summary(step_mdl)
+
+#fit the model using "predict" function
+step_prob <- predict(step_mdl, validation_set,type="response")
+#type ="response" returns probability
+
+step_pred <- ifelse(step_prob >0.5,1,0) 
+#"ifelse" function. if the probability is more than 0.5, it produces 1, otherwise 0.
+
+#show confusion matrix
+confusionMatrix(as.factor(step_pred), validation_set$DEFAULT)$table
+
+#show metrics, accuracy, sensitivity, specificity, balanced accuracy
+glm_s_results <- tibble(method = "glm step wise", 
+                        Accuracy =confusionMatrix(as.factor(step_pred), validation_set$DEFAULT)$overall[1],
+                        Sensitivity =confusionMatrix(as.factor(step_pred), validation_set$DEFAULT)$byClass[1],
+                        Specificity =confusionMatrix(as.factor(step_pred), validation_set$DEFAULT)$byClass[2],
+                        Balanced_Accuracy =confusionMatrix(as.factor(step_pred), validation_set$DEFAULT)$byClass[11])
+
+glm_s_results %>% knitr::kable() #show in a table
 
 ###############
 #decision tree 

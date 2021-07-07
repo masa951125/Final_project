@@ -11,11 +11,11 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introduction
 
-Finance is one of fields where machine learning is commonly used. It deals with a huge amount of data and is also surrounded by a lot of uncertainties. To predict outcome using pre-existing data is a crucial part of finance. In this paper, we will deal with a problem many credit card companies have been facing. Can we predict whether a credit user will pay their debt or fail based on objective data? Traditionally, finding a credible borrower have been a kind of know-how, or skill and experience nurtured by financial institutions. Instead, we try to build machine learning models. using a dataset which is open to public.
+Finance is one of fields where machine learning is commonly used. It deals with a huge amount of data and is surrounded by a lot of uncertainties. To predict future, ranging from stock market prices to individual repayment of a debt, using pre-existing data is a crucial part of finance. In this paper, we will deal with a problem many credit card companies are facing. Can we predict whether a credit client will pay their debt or fail to pay? Traditionally, finding a credible borrower have been a kind of know-how, or skill and experience nurtured by experts. Instead, we try to form machine learning models. using a dataset which is open to public.
 
-The dataset we use, "Default of Credit Card Clients Dataset" is stored in Kaggle website. It was collected in Taiwan in 2005. It has 24 variables, such as age, education, and payment condition. Outcome has two results, "0" non-default, "1" default. Each data was anonymously collected and labeled with individual ID.
+The dataset we use, "Default of Credit Card Clients Dataset" is stored in Kaggle website. It was collected in Taiwan in 2005. It has 24 variables, such as age, education, and payment condition. Outcome has two results, "0" non-default, "1" default. Each data was anonymously collected and labeled with individual IDs.
 
-Our goal is to find a classification model which predicts the most accurate outcome, default or not. We need to bear it in mind that its distribution of these outcomes is imbalanced. Namely, the number of default clients are small compared to non- default clients. To address the issue, we will use other criteria, balanced accuracy.
+Our goal is to form a classification model which predicts the most accurate outcome, default or not. We need to bear it in mind that its distribution of these outcomes is imbalanced. Namely, the number of default clients are small compared to non- default clients. To address the issue, we will use not only accuracy but also other criteria, balanced accuracy.
 
 We will use three machine learning models, logistic regression, decision tree, and random forest. If necessary, we will tune their parameters to find the best solution. Our procedures are as follows :
 
@@ -28,7 +28,7 @@ This paper is written as a final assignment in "HarvardX PH125.9x Data Science: 
 
 ## Packages and Dataset
 
-In this paper, we use R packages, "tidyverse[^1]", "DataExplorer[^2]", "gridExtra[^3]", "rpart[^4]", "caret[^5]", and "ranger[^6]".
+In this paper, we use following R packages, "tidyverse[^1]", "DataExplorer[^2]", "gridExtra[^3]", "rpart[^4]", "caret[^5]", and "ranger[^6]".
 
 [^1]: <https://cran.r-project.org/web/packages/tidyverse/index.html>
 
@@ -42,29 +42,48 @@ In this paper, we use R packages, "tidyverse[^1]", "DataExplorer[^2]", "gridExtr
 
 [^6]: <https://cran.r-project.org/web/packages/ranger/index.html>
 
-```{r Libraries used in this paper, include=FALSE}
+```{r Libraries used in this paper, warning=FALSE, include=FALSE}
+if (!require(tidyverse)){install.packages("tidyverse")
+library(tidyverse)
+}
 
-if(!require(tidyverse)) install.packages("tidyverse") 
-#basic library
-if(!require(gridExtra)) install.packages("gridExtra") 
+if (!require(DataExplorer)){install.packages("DataExplorer")
+  library(DataExplorer)
+}
+#to do data exploration (correlation matrix etc.)
+
+if (!require(gridExtra)){install.packages("gridExtra")
+  library(gridExtra)
+}
 #expansion of ggplot
-if(!require(caret)) install.packages("caret") 
+
+if (!require(caret)){install.packages("caret")
+  library(caret)
+}
 #cross validation 
-if(!require(rpart)) install.packages("rpart") 
+
+if(!require(rpart)) {install.packages("rpart")
+  library(rpart)
+}
 #to make decision tree model
-if(!require(rpart.plot)) install.packages("rpart.plot") 
+
+if (!require(rpart.plot)){install.packages("rpart.plot")
+  library(rpart.plot)
+}
 #to plot decision tree
-if(!require(DataExplorer)) install.packages("DataExplorer") 
-#to do data exploration
-if(!require(ranger)) install.packages("ranger") 
-#random forest
+
+
+if (!require(ranger)){install.packages("ranger")
+  library(ranger)
+}
+#random forest. new package that is much faster than "randomForest" package
 ```
 
 We use a dataset stored in Kaggle[^7]website. In the description, it says, "This dataset contains information on default payments, demographic factors, credit data, history of payment, and bill statements of credit card clients in Taiwan from April 2005 to September 2005." It is CSV file.
 
 [^7]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
-Kaggle requires registration to download the data. For the sake of convenience, the data file is stored in my GitHub repository[^8].
+Kaggle requires registration to download the dataset. For the sake of convenience, the file is stored in my GitHub repository[^8].
 
 [^8]: <https://github.com/masa951125/Final_project/raw/main/UCI_Credit_Card.csv>
 
@@ -77,13 +96,13 @@ original_default <- read_csv("original_default.csv")
 
 ## Data Exploration
 
-First, we need to check the downloaded dataset. Columns are as follows.
+First, we look at the downloaded dataset. Here are variables and their data type.
 
 ```{r columns, echo=FALSE}
 str(original_default)
 ```
 
-It has 30000 rows and 25 columns. "Default.payment.next.month" is an outcome . Other features seem to be either numerical or categorical data. "SEX", "EDUCATION", "MARRIAGE", "PAY_0" -"PAY_6", and "default.payment.next.month" look like categorical data, as their values are limited number of integers. Other features seem to be numerical.
+It has 30000 rows and 25 columns. "Default.payment.next.month" is our target variable. Some variables' values are limited number of integers. Some are rather wide range of numbers. "SEX", "EDUCATION", "MARRIAGE", "PAY_0" -"PAY_6", and "default.payment.next.month" look like categorical data.Other features seem to be numerical.
 
 We know there are no NAs, Nulls in the dataset.
 
@@ -105,17 +124,17 @@ plot_correlation(original_default)
 
 Takeaways from this are;
 
-1.  Outcome (default.payment.next.month) has a strong positive correlation with PAY.
+1.  Outcome (default.payment.next.month) has a strong positive correlation with PAY (positive), and PAY_AMT(negative), but a weak correlation with BILL_AMT.
 2.  Overall, LIMIT_BAL has a relatively strong correlation with other factors (except SEX).
 3.  EDUCATION, MARRIAGE, AGE have relatively strong correlation with one another.
 4.  EDUCATION and AGE have a relatively weak correlation with PAY and BILL_AMT respectively.
 5.  PAY and BILL_AMT, BILL_AMT and PAY_AMT have strong correlation.
 
-Then, we will look into these features further.
+We will look into individual features further.
 
 ### 1 Outcome
 
-First, we look into the outcome, "default.payment.next.month". The data description says, "Default payment, 1=yes, 0=no.[^9]" We show the proportion of "0","1".
+First, we look into the target variable, "default.payment.next.month". The data description says, "Default payment, 1=yes, 0=no.[^9]" We show the proportion of "0","1".
 
 [^9]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
@@ -123,7 +142,9 @@ First, we look into the outcome, "default.payment.next.month". The data descript
 prop.table(table(original_default$default.payment.next.month))
 ```
 
-This means that if we predict all the outcome as "0", we will get 77.9% accuracy. We need to take into account this fact. We change the name, "default.payment.next.month", to"DEFAULT" for the sake of convenience. Also, we change this numeric variable into factor.
+It is imbalanced. This means that if we predict all the outcome as "0", we will get 77.9% accuracy. We should be aware of this fact considering model's evaluation.
+
+We change the name, "default.payment.next.month", to"DEFAULT" for the sake of convenience. Also, we change this numeric variable into factor.
 
 ```{r include=FALSE}
 n <-which(names(original_default)=="default.payment.next.month")
@@ -136,7 +157,7 @@ original_default$DEFAULT <- as.factor(original_default$DEFAULT)
 
 ### 2 "LIMIT_BAL"
 
-This is an "amount of given credit in NT dollars (includes individual and family/supplementary credit)[^10]" It is numerical data.
+This is an "amount of given credit in NT dollars (includes individual and family/supplementary credit)[^10]" NT stands for "New Taiwan". It is numerical data.
 
 [^10]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset> NT stands for "New Taiwan".
 
@@ -154,11 +175,11 @@ Distribution is skewed right. Default clients seem to be gathered around lower r
 
 ### 3 "SEX"
 
-The values "1", "2" correspond to male and female respectively[^11]. Male is 40% and female is 60%.
+The values "1", "2" correspond to male and female respectively[^11]. Male is approximately 40% and female is 60%.
 
 [^11]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
-```{r SEX graph, include=FALSE}
+```{r SEX graph, echo=FALSE}
 prop.table(table(original_default$SEX))
 ```
 
@@ -178,7 +199,7 @@ sex_stackedbar <-original_default %>%
 grid.arrange(sex_ditribution, sex_stackedbar, nrow=1, ncol=2)
 ```
 
-There seemed to be little difference between genders. This categorical variable is somewhat irrelevant to the outcome.
+There seemed to be little difference between genders. This categorical variable seems to be irrelevant to the outcome.
 
 ### 4 "EDUCATION"
 
@@ -204,7 +225,7 @@ People whose final education is high school have relatively high default rate. O
 
 ### 5 "MARRIAGE"
 
-This is also categorical data. The value number means clients' marital status[^13]. 1=married, 2=single, 3=others. There are 54 individuals whose values are 0.
+This is also categorical data. The value number means clients' marital status[^13]. 1=married, 2=single, 3=others. But there are 54 individuals whose values are 0.
 
 [^13]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
@@ -228,7 +249,7 @@ MAR_proportion <-original_default %>%
 grid.arrange(MAR_distribution, MAR_proportion, nrow=1, ncol=2)
 ```
 
-Comparing married and single, married people are a little likely to become default.
+Value 0 is negligible. Comparing married and single people, married people are a little more likely to default.
 
 ### 6 "AGE"
 
@@ -238,7 +259,7 @@ As its name indicates, it is numerical data.
 summary(original_default$AGE)
 ```
 
-We plots its distribution as well as its default rate.
+We plots its distribution filling the bar with each age bin's default rate.
 
 ```{r AGE graph, echo=FALSE, fig.align="center", fig.height=6, fig.width=6}
 AGE_distribution <- original_default %>%
@@ -258,7 +279,7 @@ The number of clients are decreasing as they get older. Regarding default client
 
 ### 7 "PAY"
 
-Variable from PAY_0, PAY_2 \~PAY_6 have the same values, as are explained in the description[^14]. They are categorical data. PAY_0 means repayment status in September, 2005. Then go back in time by a month until April, 2005. Values are ;
+Variable from PAY_0, PAY_2 \~PAY_6 have the same values, as is explained in the description[^14]. They are categorical data. PAY_0 means repayment status in September, 2005. Then go back in time by a month until April, 2005. Values are ;
 
 [^14]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
@@ -268,7 +289,7 @@ unique(original_default$PAY_0)
 
 They mean; "-1"= pay duly, "1"= payment delay for 1 month, "2" = payment delay for 2 months, ... 9 = payment delay for 9 months and above. "0" and "-2" are not defined.
 
-We draw PAY_0 distribution and stacked bar graph.hey are categorical data.
+We draw PAY_0 distribution and stacked bar graph.
 
 ```{r PAY_0 graph, echo=FALSE, fig.height=6, fig.width=6}
 PAY_distribution <-original_default %>% 
@@ -285,9 +306,9 @@ grid.arrange(PAY_distribution, PAY_stackedbar, nrow=2, ncol=1)
   
 ```
 
-We are not sure what "-2" and "0" mean. But from these two graphs we understand that as payment delay becomes longer, clients are more likely to come to a default.
+We are not sure what "-2" and "0" mean. Non-default clients distribution is centered around 0. Default clients one is left skewed. From these two graphs we understand that as payment delay becomes longer, clients are more likely to come to a default.
 
-PAY_2 \~ PAY_6 's structures are almost as the same as PAY_0. We show their distribution.
+PAY_2 \~ PAY_6 's distributions are almost as the same as PAY_0. We show their distribution.
 
 ```{r PAY graphs, echo=FALSE, fig.height=4, fig.width=6}
 #PAY_0
@@ -333,45 +354,52 @@ grid.arrange(graph_p0, graph_p2, graph_p3, graph_p4, graph_p5, graph_p6, nrow=2,
 
 ### 8 "BILL_AMT"
 
-This variable means an amount of bill statement. This is numerical data.
+This variable means an amount of bill statement. BILL_AMT1 is a record in September, 2005[^15]. Then go back in time by a month until April, 2005. Likewise previous variables, we plot BILL_AMT distribution, filling each bar with its default rate. This is numerical variable.
+
+[^15]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
 ```{r echo=FALSE}
 summary(original_default[,13:18]) 
        
 ```
 
-BILL_AMT1 is a record in September, 2005[^15]. Then go back in time by a month until April, 2005. Likewise previous variables, we plot BILL_AMT distribution.
-
-[^15]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
+Maximum values are fluctuating, but medians and means are decreasing from BILL_AMT1 to BILL_AMT6.
 
 ```{r BILL_AMT1 graph, echo=FALSE, fig.height=3, fig.width=6}
 ggplot(data=original_default, aes(BILL_AMT1,fill= DEFAULT)) +
   geom_histogram(bins=30)
 ```
 
-From BILL_AMT1 to BILL_AMT6, their structures are almost the same as are shown in following plots.
+It is right skewed. From BILL_AMT1 to BILL_AMT6, their distributions are almost the same as are shown in following plots.
 
-```{r BILL_AMT graphs, echo=FALSE, fig.height=4, fig.width=6, message=FALSE}
-b1 <- ggplot(data=original_default, aes(BILL_AMT1)) +geom_histogram(bins=30)
-b2 <- ggplot(data=original_default, aes(BILL_AMT2)) +geom_histogram(bins=30)
-b3 <- ggplot(data=original_default, aes(BILL_AMT3)) +geom_histogram(bins=30)
-b4 <- ggplot(data=original_default, aes(BILL_AMT4)) +geom_histogram(bins=30)
-b5 <- ggplot(data=original_default, aes(BILL_AMT5)) +geom_histogram(bins=30)
-b6 <- ggplot(data=original_default, aes(BILL_AMT6)) +geom_histogram(bins=30)
+```{r BILL_AMT graphs, echo=FALSE, fig.height=6, fig.width=6, message=FALSE}
+b1 <- ggplot(data=original_default, aes(BILL_AMT1)) +geom_histogram(bins=30)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+b2 <- ggplot(data=original_default, aes(BILL_AMT2)) +geom_histogram(bins=30)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+b3 <- ggplot(data=original_default, aes(BILL_AMT3)) +geom_histogram(bins=30)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+b4 <- ggplot(data=original_default, aes(BILL_AMT4)) +geom_histogram(bins=30)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+b5 <- ggplot(data=original_default, aes(BILL_AMT5)) +geom_histogram(bins=30)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+b6 <- ggplot(data=original_default, aes(BILL_AMT6)) +geom_histogram(bins=30)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+
 grid.arrange(b1,b2,b3,b4,b5,b6, nrow=2, ncol=3)
 ```
 
 ### 9 "PAY_AMT"
 
-This variable means an amount of previous payment. This is numerical data.
+This variable means an amount of previous payment. PAY_AMT1 is an amount of previous payment in September, 2005[^16]. Likewise BILL_AMT, PAY_AMT goes back in time by a month from August to April, 2005 which is PAY_AMT6.This is numerical data.
+
+[^16]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
 ```{r echo=FALSE}
 summary(original_default[,19:24])
 ```
 
-PAY_AMT1 is an amount of previous payment in September, 2005[^16]. Likewise BILL_AMT, PAY_AMT goes back in time by a month from August to April, 2005 which is PAY_AMT6.
-
-[^16]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
+Their maximum values are fluctuating, but medians are gradually decreasing from PAY_AMT1 to PAY_AMT6.
 
 Here is PAY_AMT1's plot.
 
@@ -379,17 +407,28 @@ Here is PAY_AMT1's plot.
 ggplot(data=original_default, aes(PAY_AMT1,fill= DEFAULT)) +geom_histogram(bins=30)
 ```
 
-As we have seen a distribution summary, it is right skewed significantly. Maximum amount is more than 850,000 NT dollars, but its mean and median are 5664 and 2100 respectively.
+As we have seen a distribution summary, it is right skewed significantly. Maximum amount is more than 850,000 NT dollars, but its mean and median are 5664 and 2100 respectively. Also, about 17% of clients' values are 0.
 
-From PAY_AMT1 to PAY_AMT6, their structures are almost the same as are shown in following plots.
+```{r echo=TRUE}
+#proportion of clients whose PAY_AMT is 0
+mean(original_default$PAY_AMT1==0)
+```
 
-```{r PAY_AMT graphs, echo=FALSE, fig.height=4, fig.width=6, message=FALSE}
-p1 <- ggplot(data=original_default, aes(PAY_AMT1)) +geom_histogram(bins=30)
-p2 <- ggplot(data=original_default, aes(PAY_AMT2)) +geom_histogram(bins=30)
-p3 <- ggplot(data=original_default, aes(PAY_AMT3)) +geom_histogram(bins=30)
-p4 <- ggplot(data=original_default, aes(PAY_AMT4)) +geom_histogram(bins=30)
-p5 <- ggplot(data=original_default, aes(PAY_AMT5)) +geom_histogram(bins=30)
-p6 <- ggplot(data=original_default, aes(PAY_AMT6)) +geom_histogram(bins=30)
+From PAY_AMT1 to PAY_AMT6, their distributions follow the same trend as PAY_AMT1.
+
+```{r PAY_AMT graphs, echo=FALSE, fig.height=6, fig.width=6, message=FALSE}
+p1 <- ggplot(data=original_default, aes(PAY_AMT1)) +geom_histogram(bins=30)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
+p2 <- ggplot(data=original_default, aes(PAY_AMT2)) +geom_histogram(bins=30)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+p3 <- ggplot(data=original_default, aes(PAY_AMT3)) +geom_histogram(bins=30)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+p4 <- ggplot(data=original_default, aes(PAY_AMT4)) +geom_histogram(bins=30)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+p5 <- ggplot(data=original_default, aes(PAY_AMT5)) +geom_histogram(bins=30)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+p6 <- ggplot(data=original_default, aes(PAY_AMT6)) +geom_histogram(bins=30)+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 grid.arrange(p1,p2,p3,p4,p5,p6, nrow=2, ncol=3)
 ```
@@ -402,7 +441,7 @@ Before going further, we will arrange our dataset to make it easier to investiga
 original_default <- original_default %>% select(-ID)
 ```
 
-Currently our data is composed of numerical values. Categorical values need to be changed to factors. As we saw in data exploration, SEX,EDUCATION,MARRIAGE, PAY_0\~PAY_6 are categorical values.
+Currently our data is composed of numerical values. Categorical values need to be changed to a factor. As we saw in data exploration, SEX,EDUCATION,MARRIAGE, PAY_0\~PAY_6 are categorical values.
 
 ```{r include=FALSE}
 original_default <- original_default %>%
@@ -421,7 +460,7 @@ Regarding numerical values, "LIMIT_BAL" ranges from 10000 to 1000000, but "AGE" 
 
 $$Transformed.Values = \frac{Values - Mean}{Standard.Deviation}$$
 
-Then we get variables whose means are 0, and standard deviations are 1 using function "scale".
+We get variables whose means are 0, and standard deviations are 1 using function "scale".
 
 ```{r include=FALSE}
 cat_col <- c("SEX", "EDUCATION", "MARRIAGE",
@@ -464,11 +503,11 @@ tibble(outcome =c(0,1),
        "test_set" = prop.table(table(test_set$DEFAULT)))
 ```
 
-## Model analysis
+## Model Analysis
 
-### 1 Evaluation metrics
+### 1 Evaluation Metrics
 
-Generally speaking, overall accuracy is used to evaluate a model. But this dataset has imbalanced proportion of outcomes. Guessing all responses are 0, we calculate its confusion matrix.
+Generally speaking, overall accuracy is used to evaluate a model. But this dataset has imbalanced proportion of outcomes as we explored. What consequences bring about? Guessing all responses are 0, we calculate its confusion matrix.
 
 ```{r echo=FALSE}
 base_pred <-factor(numeric(length(validation_set$DEFAULT)),levels=c("0","1"))
@@ -489,21 +528,63 @@ In contrast,
 -   Balanced accuracy (arithmetic mean of sensitivity and specificity) 0.5
 
 ```{r include=FALSE}
-confusionMatrix(base_pred, test_set$DEFAULT)$overall[1] #accuracy
-confusionMatrix(base_pred, test_set$DEFAULT)$byClass[1] #sensitivity
-confusionMatrix(base_pred, test_set$DEFAULT)$byClass[2] #specificity
-confusionMatrix(base_pred, test_set$DEFAULT)$byClass[11] #balanced accuracy
+confusionMatrix(base_pred, validation_set$DEFAULT)$overall[1] #accuracy
+confusionMatrix(base_pred, validation_set$DEFAULT)$byClass[1] #sensitivity
+confusionMatrix(base_pred, validation_set$DEFAULT)$byClass[2] #specificity
+confusionMatrix(base_pred, validation_set$DEFAULT)$byClass[11] #balanced accuracy
 ```
 
 As such, the credit company falsely give credit to a lot of clients who will fail to repay a debt. The loss for the company would be huge. Therefore, our goal is to pursue more accurate accuracy than guessing all responses are 0, taking account of improving specificity. We will use both *accuracy* and *balanced accuracy* to evaluate each model.
 
-### 2 Logistic regression
+### 2 Logistic Regression
 
 Firstly, we choose logistic regression. Logistic regression is commonly used in binary classification problems (outcome is 0 and 1, or True and False). As it uses logistic transformed odds, it produces outcome ranging from 0 to 1.
 
-We have 24 features in the dataset. There are many ways to deal with such many predictors. One of them is step-wise regression. This method is to repeatedly examine statistically significance of each variable in a regression model. There are three ways; forward selection, backward elimination, forward and backward elimination. Forward selection starts from no variable and add a variable step by step. Backward elimination starts from full model and subtract variables one by one. Forward and backward combines the two. One of the most convenient features of this method is we can get logistic regression results without knowing details of variables in the dataset. Firstly, we use forward and backward step wise regression, as it is commonly used. Afterwards, we will use logistic regression with fewer predictors based on our data exploration.
+We have 24 features in the dataset. There are many ways to deal with such many predictors. First, we will form a logistic regression model with fewer variables. In the data exploration, we understand predictors from PAY_0 to PAY_6 seem to be important. But PAY variables, BILL_AMT variables and PAY_AMT variables have strong correlation. In addition to this, BILL_AMTs seem to have weak correlation with DEFAULT, target variable.
 
-In the step-wise regression, we make two models, null model with no predictors and full model with all predictors. Then we use "step" function to conduct step-wise regression. The result;
+From these, we narrow down variables. We leave out BILL_AMT2 to BILL_AMT6, PAY_AMT2 to PAY_AMT6, PAY_2 to PAY_6 as well. Then we predict responses using glm function. The result;
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+glm_fewer_mdl <- glm(DEFAULT ~ LIMIT_BAL + SEX + EDUCATION + MARRIAGE + AGE + 
+                     PAY_0 +  PAY_AMT1 +                         BILL_AMT1,
+                     data= train_set, family= binomial(link = "logit"))
+```
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+summary(glm_fewer_mdl)
+```
+
+From this, we understand that;
+
+-   Important variables :
+
+    LIMIT_BAL, SEX(whether a client is a female or not), PAY_0( whether its values are 0, 1, 2, 3, 4), , BILL_AMT1,PAY_AMT1
+
+Then fit the model to the validation set and show its confusion matrix.
+
+```{r echo=TRUE, message=FALSE, warning=TRUE}
+glm_fewer_prob <- predict(glm_fewer_mdl, validation_set,type="response")
+glm_fewer_pred <- ifelse(glm_fewer_prob >0.5,1,0)
+confusionMatrix(as.factor(glm_fewer_pred), validation_set$DEFAULT)$table
+```
+
+Other statistic metrics are;
+
+```{r echo=FALSE}
+glm_f_results <- tibble(method = "glm fewer features",
+                  Accuracy =confusionMatrix(as.factor(glm_fewer_pred), validation_set$DEFAULT)$overall[1],
+                  Sensitivity =confusionMatrix(as.factor(glm_fewer_pred), validation_set$DEFAULT)$byClass[1],
+                  Specificity =confusionMatrix(as.factor(glm_fewer_pred), validation_set$DEFAULT)$byClass[2],
+                  Balanced_Accuracy =confusionMatrix(as.factor(glm_fewer_pred), validation_set$DEFAULT)$byClass[11])
+                  
+glm_f_results %>% knitr::kable()
+```
+
+One of other ways is step-wise regression. This method is to repeatedly examine statistical significance of each variable in a regression model[^17]. There are three methods; forward selection, backward elimination, forward and backward elimination. Forward selection starts from no variable and add a variable step by step. Backward elimination starts from full model and subtract variables one by one. Forward and backward combines the two. One of the most convenient features of this method is we can get logistic regression results without knowing details of variables in the dataset.
+
+[^17]: It uses Akaike information criterion (AIC) .<https://en.wikipedia.org/wiki/Akaike_information_criterion>
+
+We use forward and backward step wise regression, as it is commonly used. In the step-wise regression, we make two models, null model with no predictors and full model with all predictors at first. Then we use "step" function to conduct step-wise regression. The result;
 
 ```{r step-wise regression, message=FALSE, warning=FALSE, include=FALSE}
 #a null model with no predictors
@@ -514,8 +595,8 @@ full_model <- glm(DEFAULT~., data = train_set, family = binomial(link = "logit")
 
 #conduct step-wise regression backward and forward
 step_mdl   <- step(null_model, 
-                   scope = list(lower = null_model, upper = full_model), 
-                   direction = "both")
+                   scope = formula(full_model), 
+                   direction = "both") #in this case, forward and backward 
 ```
 
 ```{r echo=FALSE}
@@ -532,15 +613,15 @@ From this, we understand that;
 
     PAY_0( whether its values are -1, 1, 2, 3, 4), PAY_3( whether its values are 2), PAY_6( whether its values are 0), LIMIT_BAL, BILL_AMT3, PAY_AMT1, PAY_AMT2, SEX(whether a client is a female or not)
 
-Then predict a result and make a confusion matrix.
+Then fit the model to the validation set and make a confusion matrix.
 
-```{r echo=FALSE}
+```{r step-wise regression, echo=FALSE, warning=TRUE}
 step_prob <- predict(step_mdl, validation_set,type="response")
 step_pred <- ifelse(step_prob >0.5,1,0)
 confusionMatrix(as.factor(step_pred), validation_set$DEFAULT)$table
 ```
 
-Other statistic metric are;
+Other statistic metrics are;
 
 ```{r echo=FALSE}
 glm_s_results <- tibble(method = "glm step wise", 
@@ -552,62 +633,29 @@ glm_s_results <- tibble(method = "glm step wise",
 glm_s_results %>% knitr::kable()
 ```
 
-Can we improve the results? In the data exploration section, we have some insights which features are important to predict the outcome. As we have seen in the correlation matrix graph, we understand predictors from PAY_0 to PAY_6 seems to be important. Regarding BILL_AMT and PAY_AMT, the structure of each feature is very similar to one another.
-
-Bearing these in mind, we narrow down features and leave out BILL_AMT2 to BILL_AMT6 and PAY_AMT2 to PAY_AMT6. Then we predict responses using glm function. The result;
-
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-glm_fewer_mdl <- glm(DEFAULT ~ LIMIT_BAL + SEX + EDUCATION + MARRIAGE + AGE + 
-                    PAY_0 + PAY_2 + PAY_3 + PAY_4 + PAY_5 + PAY_6 + 
-                    BILL_AMT1 + PAY_AMT1,
-                     data= train_set, family= binomial(link = "logit"))
-```
+Comparing the two models;
 
 ```{r echo=FALSE}
-summary(glm_fewer_mdl)
+bind_rows(glm_f_results, glm_s_results) %>% knitr::kable()
+
+
 ```
 
-From this, we understand that;
+The model with fewer features shows better accuracy than the step-wise model. But its specificity is worse then the step-wise model, in consequence produces worse balanced accuracy. We understand from these regression the selection of variables are crucial in determining the result. We look into other models.
 
--   Important variables :
-
-    LIMIT_BAL, SEX(whether a client is a female or not), PAY_0( whether its values are -1, 1, 2, 3, 4), PAY_3( whether its values are 2), PAY_6( whether its values are 0), BILL_AMT1, PAY_AMT1
-
-Then fit the model to the validation set and show its confusion matrix.
-
-```{r echo=FALSE, message=FALSE, warning=FALSE}
-glm_fewer_prob <- predict(glm_fewer_mdl, validation_set,type="response")
-glm_fewer_pred <- ifelse(glm_fewer_prob >0.5,1,0)
-confusionMatrix(as.factor(glm_fewer_pred), validation_set$DEFAULT)$table
-```
-
-Other statistic metric are;
-
-```{r echo=FALSE}
-glm_f_results <- tibble(method = "glm fewer features",
-                  Accuracy =confusionMatrix(as.factor(glm_fewer_pred), validation_set$DEFAULT)$overall[1],
-                  Sensitivity =confusionMatrix(as.factor(glm_fewer_pred), validation_set$DEFAULT)$byClass[1],
-                  Specificity =confusionMatrix(as.factor(glm_fewer_pred), validation_set$DEFAULT)$byClass[2],
-                  Balanced_Accuracy =confusionMatrix(as.factor(glm_fewer_pred), validation_set$DEFAULT)$byClass[11])
-                  
-glm_f_results %>% knitr::kable()
-```
-
-Comparing the two logistic regression models, the later model in which some seemingly irrelevant features are left out performed better in terms of both accuracy and balanced accuracy.
-
-### 3 Decision tree
+### 3 Decision Tree
 
 A decision tree is a familiar and intuitive method. For example, if you feel sick, a physician may ask you questions following a tree chart. You are asked whether it is yes or no at each node of the chart. After following the nodes, the doctor gets your health outcome.
 
-Decision tree algorithm recursively divides the dataset into partitions with similar values for the outcome. A metric is used to choose the partitions. One of decision tree R function "rpart" uses Gini index.
+Decision tree algorithm recursively divides the dataset into partitions with similar values for the outcome. A metric is used to choose the partitions. One of decision tree R functions "rpart" uses Gini index.
 
 $$
 \mbox{Gini}(j) = \sum_{k=1}^K \hat{p}_{j,k}(1-\hat{p}_{j,k})
 $$
 
-$\hat{p}_{j,k}$ as the proportion of observations in partition $\ {j}$ that are of class $\ {k}$.[^17] If there are lots of classes in the partition, Gini index, also called Gini impurity, increases up to 1. On the other hand, if there are few classes in the partition it decreases down to 0. If you predict perfectly, the index is 0.
+$\hat{p}_{j,k}$ as the proportion of observations in partition $\ {j}$ that are of class $\ {k}$.[^18] If there are lots of classes in the partition, Gini index, also called Gini impurity, increases up to 1. On the other hand, if there are few classes in the partition it decreases down to 0. If you predict perfectly, the index is 0.
 
-[^17]: Irizarry, Rafael A, "Introduction to Data Science: Data Analysis and Prediction Algorithms with R, 31.10.4 Classification (decision) trees". *Internet archive*, <https://rafalab.github.io/dsbook/examples-of-algorithms.html#classification-decision-trees>
+[^18]: Irizarry, Rafael A, "Introduction to Data Science: Data Analysis and Prediction Algorithms with R, 31.10.4 Classification (decision) trees". *Internet archive*, <https://rafalab.github.io/dsbook/examples-of-algorithms.html#classification-decision-trees>
 
 We use "rpart" function to make a model, then predict the outcome.
 
@@ -626,7 +674,7 @@ We draw a decision tree based on this model.
 rpart.plot(rpart_mdl)
 ```
 
-This model uses only PAY_O to make partitions. This means the credit company need to check a client's PAY_0. If the value is -2, -1, 0, 1, 5, they are likely to repay, otherwise, they default on the debt.
+This model uses only PAY_O to make partitions. This means the credit company need to check a client's PAY_0. If the value is -2, -1, 0, 1, 5, they are likely to repay, otherwise, they are likely to default on the debt.
 
 Then predict the outcome, and show its confusion matrix.
 
@@ -668,7 +716,7 @@ Cp stands for complexity parameter. It determines the complexity of the model. A
 rpart_mdl$control$cp
 ```
 
-We train the dataset using "train" function. This function conducts 10 folds cross validation as a default.
+We train the dataset using "train" function. This function conducts 10 folds cross validation as a default. As we do not specify the number, it will conduct 10 folds cross validation.
 
 ```{r include=FALSE}
 set.seed(2021, sample.kind = "Rounding")
@@ -695,9 +743,9 @@ Then draw a decision tree.
 rpart.plot(rpart_tuned_mdl$finalModel)
 ```
 
-As PAY variables are factored and turned into a dummy variable, a node "PAY_02", for example, is asking whether a client's PAY_0 is "-1" or not. "-1" is the second level in PAY_0 original column.
+As PAY variables are factored and turned into a dummy variable, a node "PAY_02", for example, is asking whether a client's PAY_0 is "-1" or not. "-1" is the second level in the PAY_0 original column.
 
-Fit the model to the validation set and show confusion matrix.
+Fit the model to the validation set and show its confusion matrix.
 
 ```{r echo=FALSE}
 rpart_tuned_pred <- predict(rpart_tuned_mdl, validation_set)
@@ -723,15 +771,15 @@ bind_rows(rpart_results, rpart_tuned_results) %>% knitr::kable()
 
 ```
 
-### 4 Random forest
+### 4 Random Forest
 
-Decision tree algorithm is easy to understand as it follow human decision making process. However, it "can easily over-train" and "is not very flexible."[^18] To improve this, we introduce random forest algorithm.
+Decision tree algorithm is easy to understand as it follow human decision making process. However, it "can easily over-train" and "is not very flexible."[^19] To improve this, we introduce random forest algorithm.
 
-[^18]: Irizarry, Rafael A, "Introduction to Data Science: Data Analysis and Prediction Algorithms with R, 31.10.4 Classification (decision) trees". *Internet archive*, [\<https://rafalab.github.io/dsbook/examples-of-algorithms.html\#classification-decision-trees\>](https://rafalab.github.io/dsbook/examples-of-algorithms.html#classification-decision-trees){.uri}
+[^19]: Irizarry, Rafael A, "Introduction to Data Science: Data Analysis and Prediction Algorithms with R, 31.10.4 Classification (decision) trees". *Internet archive*, [\<https://rafalab.github.io/dsbook/examples-of-algorithms.html\#classification-decision-trees\>](https://rafalab.github.io/dsbook/examples-of-algorithms.html#classification-decision-trees){.uri}
 
-Random forest is one of the most popular machine learning algorithms. As its name implies, it makes multiple trees "**randomly** different" from a dataset, then produce a final prediction based on the average prediction of "combination of trees", namely "**forest**".[^19]
+Random forest is one of the most popular machine learning algorithms. As its name implies, it makes multiple trees "**randomly** different" from a dataset, then produce a final prediction based on the average prediction of "combination of trees", namely "**forest**".[^20]
 
-[^19]: Irizarry, Rafael A, "Introduction to Data Science: Data Analysis and Prediction Algorithms with R, 31.11 Random forests". *Internet archive*, <https://rafalab.github.io/dsbook/examples-of-algorithms.html#random-forests>
+[^20]: Irizarry, Rafael A, "Introduction to Data Science: Data Analysis and Prediction Algorithms with R, 31.11 Random forests". *Internet archive*, <https://rafalab.github.io/dsbook/examples-of-algorithms.html#random-forests>
 
 In this paper, we use "ranger" function. And show the model details;
 
@@ -779,7 +827,7 @@ rf_results <- tibble(method = "random forest",
 rf_results %>% knitr::kable()
 ```
 
-The results has been much improved, especially specificity, compared to other models. Can we improve the result further? Using "modelLookup", we can find parameters which can be tuned.
+The results has been much improved, especially specificity, compared to other models. Can we improve the result further? Using "modelLookup", we can sse parameters which can be tuned.
 
 ```{r echo=FALSE}
 modelLookup("ranger")
@@ -859,7 +907,7 @@ bind_rows(glm_s_results, glm_f_results, rpart_results, rpart_tuned_results, rf_r
 
 Among them, the best performance in terms of both accuracy and balanced accuracy is produced by "**random forest default model**". As we mentioned before, **PAY_0** is the most important variables compared with others. Then follows **BILL_AMT1**, **PAY_AMT1**, and **LIMIT_BAL**, and **AGE.**
 
-We fit this model to the test set and extract final evaluation.
+We fit this model to the test set and extract final results.
 
 ```{r echo=FALSE}
 final_rf_pred <- predict(rpart_mdl, test_set,type="class")
@@ -880,12 +928,14 @@ Fitting the model to the test set, we get **accuracy 0.8226962** and **balanced 
 
 ## Conclusion
 
-In this paper, we collected an open data, "Default of Credit Card Clients Dataset" and explored its information seeking for insights which contributed to the model making. We used three methods, logistic regression, decision tree, and random forest. In each method, we tried to improve the results by changing variables and tuning hyperparameters. As its outcomes are imbalanced, we used balanced accuracy to compare the models results.
+### Summary of Our Research
+
+In this paper, we used an open data, "Default of Credit Card Clients Dataset" and explored its information seeking for insights which contributed to the model making. We used three methods, logistic regression, decision tree, and random forest. In each method, we tried to improve the results by changing variables and tuning hyperparameters.
 
 Random forest algorithm showed the best performance. Fitting it to the test set, we got accuracy 0.8226962 and balanced accuracy 0.6471006. But when tuned, the model showed over-fitted results. The logistic regression models outperform the decision tree models. As well as the random forest models, the default decision tree model showed better performance than the tuned model.
 
-As we use rather simple methods in the paper, we assume limitations are revealed. Firstly, we used variables almost as they are. But some variables, for example, PAY, PAY_AMT,and BILL_AMT, seem to have some relations. If we tweak these variables, this would produce more accurate results.
+### Future Study
 
-Moreover, these variables, PAY, PAY_AMT,and BILL_AMT, are historical data over a half year. If we can look into these historical changes further, we might be able to acquire more accurate results.
+As we use rather simple methods in the paper, we recognized our limitations in terms of dealing with the variables. Basically, we formed logistic regression model assuming that independent variables are not highly correlated with each other. We eliminated some of the variables according to some insights from our exploration. But we need to use more rigorous methods regarding the variables. Tweaking the variables or regularization should be taken into consideration. Moreover, the variables, PAY, PAY_AMT,and BILL_AMT, are a kind of historical data over a half year. If we can look into these historical changes further, we might be able to acquire more accurate results.
 
-Finally, from a business point of view, overall economic condition may play a very important role in predicting people's financial behavior. In the late 2000s, many people could not afford to pay their loans. On the other hand, when economy is booming, people repay the debt easily. Of course, our dataset did not have such information, but if we want to make a more credible model, we need to consider what kind of data is offered.
+From a business point of view, overall economic condition may play a very important role in predicting people's financial behavior. A case in point, many people could not afford to pay their loan in the late 2000s due to the financial crisis at that time. On the other hand, when economy is booming, people repay the debt easily. Our dataset did not have such information, but if we want to make a more credible and practical model, we need to consider what kind of data is offered.
