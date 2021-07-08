@@ -586,7 +586,7 @@ One of other ways is step-wise regression. This method is to repeatedly examine 
 
 We use forward and backward step wise regression, as it is commonly used. In the step-wise regression, we make two models, null model with no predictors and full model with all predictors at first. Then we use "step" function to conduct step-wise regression. The result;
 
-```{r step-wise regression, message=FALSE, warning=FALSE, include=FALSE}
+```{r step-wise regression model, message=FALSE, warning=FALSE, include=FALSE}
 #a null model with no predictors
 null_model <- glm(DEFAULT~1, data = train_set, family = binomial(link = "logit"))
 
@@ -615,7 +615,7 @@ From this, we understand that;
 
 Then fit the model to the validation set and make a confusion matrix.
 
-```{r step-wise regression, echo=FALSE, warning=TRUE}
+```{r echo=FALSE, warning=TRUE}
 step_prob <- predict(step_mdl, validation_set,type="response")
 step_pred <- ifelse(step_prob >0.5,1,0)
 confusionMatrix(as.factor(step_pred), validation_set$DEFAULT)$table
