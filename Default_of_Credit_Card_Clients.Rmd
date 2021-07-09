@@ -28,7 +28,7 @@ This paper is written as a final assignment in "HarvardX PH125.9x Data Science: 
 
 ## Packages and Dataset
 
-In this paper, we use following R packages, "tidyverse[^1]", "DataExplorer[^2]", "gridExtra[^3]", "rpart[^4]", "caret[^5]", and "ranger[^6]".
+In this paper, we use following R packages, "tidyverse[^1]", "DataExplorer[^2]", "gridExtra[^3]", "e1071[^4]", "caret[^5]", "rpart[^6]", "rpart.plot[^7]", and "ranger[^8]".
 
 [^1]: <https://cran.r-project.org/web/packages/tidyverse/index.html>
 
@@ -36,11 +36,15 @@ In this paper, we use following R packages, "tidyverse[^1]", "DataExplorer[^2]",
 
 [^3]: <https://cran.r-project.org/web/packages/gridExtra/index.html>
 
-[^4]: <https://cran.r-project.org/web/packages/rpart/index.html>
+[^4]: <https://cran.r-project.org/web/packages/e1071/index.html>
 
 [^5]: <https://cran.r-project.org/web/packages/caret/index.html>
 
-[^6]: <https://cran.r-project.org/web/packages/ranger/index.html>
+[^6]: <https://cran.r-project.org/web/packages/rpart/index.html>
+
+[^7]: <https://cran.r-project.org/web/packages/part.plot/index.html>
+
+[^8]: <https://cran.r-project.org/web/packages/ranger/index.html>
 
 ```{r Libraries used in this paper, warning=FALSE, include=FALSE}
 if (!require(tidyverse)){install.packages("tidyverse")
@@ -56,6 +60,11 @@ if (!require(gridExtra)){install.packages("gridExtra")
   library(gridExtra)
 }
 #expansion of ggplot
+
+if (!require(e1071)){install.packages("e1071")
+  library(e1071)
+}
+#misc Functions of the Department of Statistics
 
 if (!require(caret)){install.packages("caret")
   library(caret)
@@ -79,13 +88,13 @@ if (!require(ranger)){install.packages("ranger")
 #random forest. new package that is much faster than "randomForest" package
 ```
 
-We use a dataset stored in Kaggle[^7]website. In the description, it says, "This dataset contains information on default payments, demographic factors, credit data, history of payment, and bill statements of credit card clients in Taiwan from April 2005 to September 2005." It is CSV file.
+We use a dataset stored in Kaggle[^9]website. In the description, it says, "This dataset contains information on default payments, demographic factors, credit data, history of payment, and bill statements of credit card clients in Taiwan from April 2005 to September 2005." It is CSV file.
 
-[^7]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
+[^9]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
-Kaggle requires registration to download the dataset. For the sake of convenience, the file is stored in my GitHub repository[^8].
+Kaggle requires registration to download the dataset. For the sake of convenience, the file is stored in my GitHub repository[^10].
 
-[^8]: <https://github.com/masa951125/Final_project/raw/main/UCI_Credit_Card.csv>
+[^10]: <https://github.com/masa951125/Final_project/raw/main/UCI_Credit_Card.csv>
 
 ```{r Downloading dataset, include=FALSE}
 
@@ -134,9 +143,9 @@ We will look into individual features further.
 
 ### 1 Outcome
 
-First, we look into the target variable, "default.payment.next.month". The data description says, "Default payment, 1=yes, 0=no.[^9]" We show the proportion of "0","1".
+First, we look into the target variable, "default.payment.next.month". The data description says, "Default payment, 1=yes, 0=no.[^11]" We show the proportion of "0","1".
 
-[^9]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
+[^11]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
 ```{r proportion of values in the target variable, echo=FALSE}
 prop.table(table(original_default$default.payment.next.month))
@@ -157,9 +166,9 @@ original_default$DEFAULT <- as.factor(original_default$DEFAULT)
 
 ### 2 "LIMIT_BAL"
 
-This is an "amount of given credit in NT dollars (includes individual and family/supplementary credit)[^10]" NT stands for "New Taiwan". It is numerical data.
+This is an "amount of given credit in NT dollars (includes individual and family/supplementary credit)[^12]" NT stands for "New Taiwan". It is numerical data.
 
-[^10]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset> NT stands for "New Taiwan".
+[^12]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset> NT stands for "New Taiwan".
 
 ```{r summary LIMIT_BAL, echo=FALSE}
 summary(original_default$LIMIT_BAL)
@@ -175,9 +184,9 @@ Distribution is skewed right. Default clients seem to be gathered around lower r
 
 ### 3 "SEX"
 
-The values "1", "2" correspond to male and female respectively[^11]. Male is approximately 40% and female is 60%.
+The values "1", "2" correspond to male and female respectively[^13]. Male is approximately 40% and female is 60%.
 
-[^11]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
+[^13]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
 ```{r proportion of SEX, echo=FALSE}
 prop.table(table(original_default$SEX))
@@ -203,9 +212,9 @@ There seemed to be little difference between genders.
 
 ### 4 "EDUCATION"
 
-In this variable, values are "1", "2", "3", "4", "5", "6". They are categorical values. The numbers have meanings as follows ; 1=graduate school, 2=university, 3=high school, 4=others, 5=unknown, 6=unknown[^12]. We draw a distribution and a default rates proportion graph of this variable.
+In this variable, values are "1", "2", "3", "4", "5", "6". They are categorical values. The numbers have meanings as follows ; 1=graduate school, 2=university, 3=high school, 4=others, 5=unknown, 6=unknown[^14]. We draw a distribution and a default rates proportion graph of this variable.
 
-[^12]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
+[^14]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
 ```{r EDUCATION graphs, echo=FALSE, fig.align="center", fig.height=3, fig.width=6}
 EDU_distribution <-original_default %>% 
@@ -225,9 +234,9 @@ People whose final education is high school have relatively high default rate. O
 
 ### 5 "MARRIAGE"
 
-This is also categorical data. The value number means clients' marital status[^13]. 1=married, 2=single, 3=others. But this column includes undefined 0. There are 54 individuals whose values are 0.
+This is also categorical data. The value number means clients' marital status[^15]. 1=married, 2=single, 3=others. But this column includes undefined 0. There are 54 individuals whose values are 0.
 
-[^13]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
+[^15]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
 ```{r Number of 0 value clients, include=FALSE}
 sum(original_default$MARRIAGE==0)
@@ -279,9 +288,9 @@ The number of clients are decreasing as they get older. Regarding the default cl
 
 ### 7 "PAY"
 
-This group includes variable from PAY_0, PAY_2 \~PAY_6[^14]. PAY_0 means repayment status in September, 2005. Then go back in time by a month until April, 2005, PAY_6. Their values are;
+This group includes variable from PAY_0, PAY_2 \~PAY_6[^16]. PAY_0 means repayment status in September, 2005. Then go back in time by a month until April, 2005, PAY_6. Their values are;
 
-[^14]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
+[^16]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
 ```{r unique values of PAY, echo=FALSE}
 unique(original_default$PAY_0)
@@ -353,9 +362,9 @@ grid.arrange(graph_p0, graph_p2, graph_p3, graph_p4, graph_p5, graph_p6, nrow=2,
 
 ### 8 "BILL_AMT"
 
-This variable means an amount of bill statement. BILL_AMT1 is a record in September, 2005[^15]. Then go back in time by a month until April, 2005.
+This variable means an amount of bill statement. BILL_AMT1 is a record in September, 2005[^17]. Then go back in time by a month until April, 2005.
 
-[^15]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
+[^17]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
 ```{r summary of BILL_AMT, echo=FALSE}
 summary(original_default[,13:18]) 
@@ -389,9 +398,9 @@ grid.arrange(b1,b2,b3,b4,b5,b6, nrow=2, ncol=3)
 
 ### 9 "PAY_AMT"
 
-This variable means an amount of previous payment. PAY_AMT1 is an amount of previous payment in September, 2005[^16]. Likewise BILL_AMT, PAY_AMT goes back in time by a month from August to April, 2005 which is PAY_AMT6.
+This variable means an amount of previous payment. PAY_AMT1 is an amount of previous payment in September, 2005[^18]. Likewise BILL_AMT, PAY_AMT goes back in time by a month from August to April, 2005 which is PAY_AMT6.
 
-[^16]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
+[^18]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
 ```{r echo=FALSE}
 summary(original_default[,19:24])
@@ -578,9 +587,9 @@ glm_f_results <- tibble(method = "glm fewer features",
 glm_f_results %>% knitr::kable()
 ```
 
-Another option to deal with many variables is step-wise regression. This method is to repeatedly examine statistical significance of each variable in a regression model[^17]. It includes three ways; forward selection, backward elimination, forward and backward elimination. Forward selection starts from no variable and add a variable step by step. Backward elimination starts from full model and subtract variables one by one. Forward and backward combines the two. One of the most convenient features of this method is we can get logistic regression results without knowing details of variables in the dataset.
+Another option to deal with many variables is step-wise regression. This method is to repeatedly examine statistical significance of each variable in a regression model[^19]. It includes three ways; forward selection, backward elimination, forward and backward elimination. Forward selection starts from no variable and add a variable step by step. Backward elimination starts from full model and subtract variables one by one. Forward and backward combines the two. One of the most convenient features of this method is we can get logistic regression results without knowing details of variables in the dataset.
 
-[^17]: It uses Akaike information criterion (AIC) .<https://en.wikipedia.org/wiki/Akaike_information_criterion>
+[^19]: It uses Akaike information criterion (AIC) .<https://en.wikipedia.org/wiki/Akaike_information_criterion>
 
 We use forward and backward step-wise regression, as it is commonly used. In the step-wise regression, we make two models, null model with no predictors and full model with all predictors at first. Then we use "step" function to conduct step-wise regression. The result;
 
@@ -649,9 +658,9 @@ $$
 \mbox{Gini}(j) = \sum_{k=1}^K \hat{p}_{j,k}(1-\hat{p}_{j,k})
 $$
 
-$\hat{p}_{j,k}$ as the proportion of observations in partition $\ {j}$ that are of class $\ {k}$.[^18] If there are lots of classes in the partition, Gini index, also called Gini impurity, increases up to 1. On the other hand, if there are few classes in the partition it decreases down to 0. If you predict perfectly, the index is 0.
+$\hat{p}_{j,k}$ as the proportion of observations in partition $\ {j}$ that are of class $\ {k}$.[^20] If there are lots of classes in the partition, Gini index, also called Gini impurity, increases up to 1. On the other hand, if there are few classes in the partition it decreases down to 0. If you predict perfectly, the index is 0.
 
-[^18]: Irizarry, Rafael A, "Introduction to Data Science: Data Analysis and Prediction Algorithms with R, 31.10.4 Classification (decision) trees". *Internet archive*, <https://rafalab.github.io/dsbook/examples-of-algorithms.html#classification-decision-trees>
+[^20]: Irizarry, Rafael A, "Introduction to Data Science: Data Analysis and Prediction Algorithms with R, 31.10.4 Classification (decision) trees". *Internet archive*, <https://rafalab.github.io/dsbook/examples-of-algorithms.html#classification-decision-trees>
 
 We use "rpart" function to form a model, then predict the outcome.
 
@@ -769,13 +778,13 @@ bind_rows(rpart_results, rpart_tuned_results) %>% knitr::kable()
 
 ### 4 Random Forest
 
-Decision tree algorithm is easy to understand as it follow human decision making process. However, it "can easily over-train" and "is not very flexible."[^19] To improve this, we introduce random forest algorithm.
+Decision tree algorithm is easy to understand as it follow human decision making process. However, it "can easily over-train" and "is not very flexible."[^21] To improve this, we introduce random forest algorithm.
 
-[^19]: Irizarry, Rafael A, "Introduction to Data Science: Data Analysis and Prediction Algorithms with R, 31.10.4 Classification (decision) trees". *Internet archive*, <https://rafalab.github.io/dsbook/examples-of-algorithms.html#classification-decision-trees>
+[^21]: Irizarry, Rafael A, "Introduction to Data Science: Data Analysis and Prediction Algorithms with R, 31.10.4 Classification (decision) trees". *Internet archive*, <https://rafalab.github.io/dsbook/examples-of-algorithms.html#classification-decision-trees>
 
-Random forest is one of the most popular machine learning algorithms. As its name implies, it makes multiple trees "**randomly** different" from a dataset, then produce a final prediction based on the average prediction of "combination of trees", namely "**forest**".[^20]
+Random forest is one of the most popular machine learning algorithms. As its name implies, it makes multiple trees "**randomly** different" from a dataset, then produce a final prediction based on the average prediction of "combination of trees", namely "**forest**".[^22]
 
-[^20]: Irizarry, Rafael A, "Introduction to Data Science: Data Analysis and Prediction Algorithms with R, 31.11 Random forests". *Internet archive*, <https://rafalab.github.io/dsbook/examples-of-algorithms.html#random-forests>
+[^22]: Irizarry, Rafael A, "Introduction to Data Science: Data Analysis and Prediction Algorithms with R, 31.11 Random forests". *Internet archive*, <https://rafalab.github.io/dsbook/examples-of-algorithms.html#random-forests>
 
 In this paper, we use "ranger" function. And show the model details;
 
@@ -928,7 +937,7 @@ Fitting the model to the test set, we get **accuracy 0.8226962** and **balanced 
 
 In this paper, we used an open data, "Default of Credit Card Clients Dataset" and explored its information seeking for insights which contributed to the model making. We used three methods, logistic regression, decision tree, and random forest. In each method, we tried to improve the results by changing variables and tuning hyperparameters.
 
-Random forest algorithm showed the best performance. Fitting it to the test set, we got accuracy 0.8226962 and balanced accuracy 0.6471006. But when tuned, the model showed over-fitted results. As well as the random forest models, the default decision tree model showed better performance than the tuned model.
+Random forest algorithm showed the best performance. Fitting it to the test set, we got accuracy 0.8226962 and balanced accuracy 0.6471006. But when tuned, the model showed over-fitted results.
 
 ### Future Study
 

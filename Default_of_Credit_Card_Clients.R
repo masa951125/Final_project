@@ -2,7 +2,7 @@
 # package and dataset
 ################################################################################
 
-#tidyverse, gridExtra, caret, rpart, DataExplorer, ranger
+#tidyverse, gridExtra, caret, e1071, rpart, DataExplorer, ranger
 #use "require" to install the packages
 
 if (!require(tidyverse)){install.packages("tidyverse")
@@ -13,6 +13,11 @@ if (!require(gridExtra)){install.packages("gridExtra")
   library(gridExtra)
 }
 #expansion of ggplot
+
+if (!require(e1071)){install.packages("e1071")
+  library(e1071)
+}
+#misc Functions of the Department of Statistics
 
 if (!require(caret)){install.packages("caret")
   library(caret)
