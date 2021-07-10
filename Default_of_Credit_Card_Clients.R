@@ -102,6 +102,9 @@ ggplot(data=original_default, aes(LIMIT_BAL, fill=DEFAULT), ) +
 #######
 #2 SEX
 #######
+#find unique values in the column
+sort(unique(original_default$SEX))
+#use "sort" function to show values in order
 
 #proportion of genders, using"prop.table" as before
 prop.table(table(original_default$SEX))
@@ -129,7 +132,8 @@ grid.arrange(sex_ditribution, sex_stackedbar, nrow=1, ncol=2)
 #############
 
 #find unique values in the column
-unique(original_default$EDUCATION)
+sort(unique(original_default$EDUCATION))
+#use "sort" function to show values in order
 
 #draw distribution and proportion side by side
 #distribution graph filling the bar with proportion of defaults("fill"argument)
@@ -155,10 +159,8 @@ grid.arrange(EDU_distribution, EDU_stackedbar, nrow=1, ncol=2)
 ############
 
 #find unique values in the column
-unique(original_default$ MARRIAGE)
-
-#find number of 0 value
-sum(original_default$MARRIAGE==0)
+sort(unique(original_default$ MARRIAGE))
+#use "sort" function to show values in order
 
 #draw distribution and proportion side by side
 #distribution graph filling the bar with proportion of defaults("fill"argument)
@@ -209,7 +211,8 @@ grid.arrange(AGE_distribution, AGE_proportion, nrow=2, ncol=1)
 #######
 
 #PAY_0 unique values
-unique(original_default$PAY_0)
+sort(unique(original_default$PAY_0))
+#use "sort" function to show values in order
 
 #draw distribution and proportion side by side
 #distribution graph filling the bar with proportion of defaults("fill"argument)
@@ -693,6 +696,13 @@ bind_rows(glm_s_results,
           rf_cv_results)%>% 
   knitr::kable()
 #show in a table using "kable" function in knitr package
+
+#plot the variable's importance
+#"rf_mdl$variable.importance" shows importance of the variables. make a data.frame and plot 
+imp_df <- data.frame(Variable = names(rf_mdl$variable.importance),
+                     Importance = as.numeric(rf_mdl$variable.importance)) 
+ggplot(imp_df, aes(x=Variable, y=Importance)) +
+  geom_bar(stat="identity") +coord_flip() #flip x axis and y axis 
 
 #fit the best performance model using predict
 final_rf_pred <- predict(rpart_mdl, test_set,type="class") 

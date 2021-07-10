@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Introduction
 
-Finance is one of fields where machine learning is commonly used. It deals with a huge amount of data and is surrounded by a lot of uncertainties. To predict future, ranging from stock market prices to individual repayment of a debt, using pre-existing data is a crucial part of finance. In this paper, we will deal with a problem many credit card companies are facing. Can we predict whether a credit client will pay their debt or fail to pay? Traditionally, finding a credible borrower have been a kind of know-how, or skill and experience nurtured by experts. Instead, we try to form machine learning models, using a dataset which is open to public.
+Finance is one of fields where machine learning is commonly used. It deals with a huge amount of data and is surrounded by a lot of uncertainties. To predict future, ranging from stock market prices and sales of retailers to individual repayment of a debt, using pre-existing data is a crucial part of finance. In this paper, we will deal with a problem many credit card companies are facing. Can we predict whether a credit client will pay their debt or fail to pay? Traditionally, finding a credible borrower have been a kind of know-how, or skill and experience nurtured by experts. Instead, we try to form machine learning models, using a dataset which is open to public.
 
 The dataset we use, "Default of Credit Card Clients Dataset" is stored in Kaggle website. It was collected in Taiwan in 2005. It has 24 variables, such as age, education, and payment condition. Outcome has two results, "0" non-default, "1" default. Each data was anonymously collected and labeled with individual IDs.
 
@@ -184,7 +184,13 @@ Distribution is skewed right. Default clients seem to be gathered around lower r
 
 ### 3 "SEX"
 
-The values "1", "2" correspond to male and female respectively[^13]. It is categorical data. Male is approximately 40% and female is 60%.
+The values are as follows;
+
+```{r unique values SEX, echo=FALSE}
+sort(unique(original_default$SEX))
+```
+
+"1", "2" correspond to male and female respectively[^13]. It is categorical data. Male is approximately 40% and female is 60%.
 
 [^13]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
@@ -212,7 +218,13 @@ There seemed to be little difference between genders.
 
 ### 4 "EDUCATION"
 
-In this variable, values are "1", "2", "3", "4", "5", "6". It is categorical variable. The numbers have meanings as follows ; 1=graduate school, 2=university, 3=high school, 4=others, 5=unknown, 6=unknown[^14]. We draw a distribution and a default rates proportion graph of this variable.
+The values are as follows;
+
+```{r unique values EDUCATION, echo=FALSE}
+sort(unique(original_default$EDUCATION))
+```
+
+It is categorical variable. The numbers indicate clients' final education. They have meanings as follows ; 1=graduate school, 2=university, 3=high school, 4=others, 5=unknown, 6=unknown[^14]. In the description 0 is not defined. We draw a distribution and a default rates proportion graph of this variable.
 
 [^14]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
@@ -234,13 +246,15 @@ People whose final education is high school have relatively high default rate. O
 
 ### 5 "MARRIAGE"
 
-This is also categorical data. The value number means clients' marital status[^15]. 1=married, 2=single, 3=others. But this column includes undefined 0. It is also categorical variable. There are 54 individuals whose values are 0.
+The values are as follows;
+
+```{r unique values MARRIAGE, echo=FALSE}
+sort(unique(original_default$ MARRIAGE))
+```
+
+They are also categorical data. The value number means clients' marital status[^15]. 1=married, 2=single, 3=others. This column includes undefined 0.
 
 [^15]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
-
-```{r Number of 0 value clients, include=FALSE}
-sum(original_default$MARRIAGE==0)
-```
 
 We draw a distribution and a default rates proportion graph of this variable.
 
@@ -258,7 +272,7 @@ MAR_proportion <-original_default %>%
 grid.arrange(MAR_distribution, MAR_proportion, nrow=1, ncol=2)
 ```
 
-Value 0 is negligible. Comparing married and single people, married people are a little more likely to default.
+Comparing married and single people, married people are a little more likely to default.
 
 ### 6 "AGE"
 
@@ -295,10 +309,10 @@ This group includes variable from PAY_0, PAY_2 \~PAY_6[^17]. PAY_0 means repayme
 [^17]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
 ```{r unique values of PAY, echo=FALSE}
-unique(original_default$PAY_0)
+sort(unique(original_default$PAY_0))
 ```
 
-They mean; "-1"= pay duly, "1"= payment delay for 1 month, "2" = payment delay for 2 months, ... 9 = payment delay for 9 months and above. "0" and "-2" are not defined.
+The data description says; "-1"= pay duly, "1"= payment delay for 1 month, "2" = payment delay for 2 months, ... 9 = payment delay for 9 months and above. "0" and "-2" are not defined. And no 9.
 
 We draw a distribution and a default rates proportion graph of PAY_0.
 
@@ -372,7 +386,7 @@ This group indicate an amount of bill statement. BILL_AMT1 is a record in Septem
 summary(original_default[,13:18]) 
 ```
 
-Maximum values are approximately 900000, except BILL_AMT3. And medians and means are decreasing from BILL_AMT1 to BILL_AMT6. Likewise previous variables, we plot BILL_AMT distribution filling each bar with its default rate.
+Maximum values in each group are approximately 950000, except BILL_AMT3. And medians and means are decreasing from BILL_AMT1 to BILL_AMT6. Likewise previous variables, we plot BILL_AMT distribution filling each bar with its default rate.
 
 ```{r BILL_AMT1 graph, echo=FALSE, fig.height=3, fig.width=6}
 ggplot(data=original_default, aes(BILL_AMT1,fill= DEFAULT)) +
@@ -416,7 +430,7 @@ We plot PAY_AMT1 distribution filling each bar with its default rate.
 ggplot(data=original_default, aes(PAY_AMT1,fill= DEFAULT)) +geom_histogram(bins=30)
 ```
 
-It is right skewed significantly. Maximum amount is more than 850,000 NT dollars, but its mean and median are 5664 and 2100 respectively. In addition to this, approximately 17% of clients' values are 0.
+It is right skewed significantly. Maximum amount is more than 850,000 NT dollars, but its mean and median are 5664 and 2100 respectively. Moreover, approximately 17% of clients' values are 0.
 
 ```{r proportion of 0 PAY_AMT1, echo=TRUE}
 #proportion of clients whose PAY_AMT is 0
@@ -494,7 +508,7 @@ test_set <- original_default[index_1,]
 pre_train_set <- original_default[-index_1,]
 ```
 
-We are going to use decision tree, and random forest algorithms later. They can be tuned to produce improved results by finding hyperparameters. If we tune the model using hyperparameters again and again, this might cause overfitting. To avoid this , we split the larger dataset again and produce two datasets, "train_set" and "validation_set". Split proportion is the same as before, 80% and 20% respectively.
+We are going to use decision tree, and random forest algorithms later. They can be tuned to produce improved results by finding hyperparameters. If we tune the model using hyperparameters again and again, this might cause overfitting. To avoid this , we split the larger dataset again and produce two datasets, "train_set" and "validation_set". We will fit this validation_set to models. Split proportion is the same as before, 80% train_set and 20% validation_set.
 
 ```{r spliting train set and validation set, message=FALSE, include=FALSE}
 set.seed(2021, sample.kind = "Rounding")
@@ -543,7 +557,7 @@ confusionMatrix(base_pred, validation_set$DEFAULT)$byClass[2] #specificity
 confusionMatrix(base_pred, validation_set$DEFAULT)$byClass[11] #balanced accuracy
 ```
 
-As such, the credit company would falsely give credit to a lot of clients who will fail to repay a debt. The loss for the company would be huge. Therefore, our goal is to pursue more accurate accuracy than guessing all responses are 0, taking account of improving specificity. We will use both *accuracy* and *balanced accuracy* to evaluate each model.
+As such, the credit company would falsely give credit to a lot of clients who will fail to repay a debt. The loss for the company would be huge. To avoid this, we need to consider specificity. In this sense, balanced accuracy is a good metric to evaluate. Therefore, our goal is to pursue more accurate accuracy than guessing all responses are 0, taking account of improving specificity. We will use both *accuracy* and *balanced accuracy* to evaluate each model.
 
 ### 2 Logistic Regression
 
@@ -662,7 +676,7 @@ $$
 \mbox{Gini}(j) = \sum_{k=1}^K \hat{p}_{j,k}(1-\hat{p}_{j,k})
 $$
 
-$\hat{p}_{j,k}$ as the proportion of observations in partition $\ {j}$ that are of class $\ {k}$.[^21] If there are lots of classes in the partition, Gini index, also called Gini impurity, increases up to 1. On the other hand, if there are few classes in the partition it decreases down to 0. If you predict perfectly, the index is 0.
+$\hat{p}_{j,k}$ as the proportion of observations in partition $\ {j}$ that are of class $\ {k}$.[^21] If there are lots of classes in the partition, Gini index, also called Gini impurity, increases up to 1. On the other hand, if there are few classes in the partition it decreases down to 0. If you predict the result perfectly, the index is 0.
 
 [^21]: Irizarry, Rafael A, "Introduction to Data Science: Data Analysis and Prediction Algorithms with R, 31.10.4 Classification (decision) trees". *Internet archive*, <https://rafalab.github.io/dsbook/examples-of-algorithms.html#classification-decision-trees>
 
@@ -924,7 +938,19 @@ We look at the table in which the results of our 6 models are shown.
 bind_rows(glm_s_results, glm_f_results, rpart_results, rpart_tuned_results, rf_results, rf_cv_results)%>% knitr::kable()
 ```
 
-Among them, the best performance in terms of both accuracy and balanced accuracy is produced by "**random forest model**". As we mentioned before, **PAY_0** is the most important variables compared with others. Then follows **BILL_AMT1**, **PAY_AMT1**, and **LIMIT_BAL**, and **AGE.**
+Among them, the best performance in terms of both accuracy and balanced accuracy is produced by "**random forest model**".
+
+Here we show variable's importance in this model again.
+
+```{r importance of random forest model variables 2, echo=FALSE, fig.height=3, fig.width=6}
+imp_df <- data.frame(Variable = names(rf_mdl$variable.importance),
+                   Importance = as.numeric(rf_mdl$variable.importance)) 
+
+ggplot(imp_df, aes(x=Variable, y=Importance)) +
+  geom_bar(stat="identity") +coord_flip()
+```
+
+As we mentioned before, **PAY_0** is the most important variables compared with others. Then follows **BILL_AMT1**, **PAY_AMT1**, and **LIMIT_BAL**, and **AGE.** Recent financial conditions of clients are crucial to predict the result. SEX and MARRIAGE are not important.
 
 We fit this model to the test set and extract final results.
 
