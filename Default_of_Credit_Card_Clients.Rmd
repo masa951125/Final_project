@@ -88,7 +88,7 @@ if (!require(ranger)){install.packages("ranger")
 #random forest. new package that is much faster than "randomForest" package
 ```
 
-We use a dataset stored in Kaggle[^9]website. In the description, it says, "This dataset contains information on default payments, demographic factors, credit data, history of payment, and bill statements of credit card clients in Taiwan from April 2005 to September 2005." It is CSV file.
+We use a dataset stored in Kaggle[^9]website. Its description says, "This dataset contains information on default payments, demographic factors, credit data, history of payment, and bill statements of credit card clients in Taiwan from April 2005 to September 2005." It is CSV file.
 
 [^9]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
@@ -105,13 +105,13 @@ original_default <- read_csv("original_default.csv")
 
 ## Data Exploration
 
-First, we look at the downloaded dataset. Here are variables and their data type.
+First, we look at the downloaded dataset. Here are variables and their data type. As we use "read_csv" function in tidyverse package, all variables are numeric.
 
 ```{r str original_default, echo=FALSE}
 str(original_default)
 ```
 
-It has 30000 rows and 25 columns. "Default.payment.next.month" is our target variable. Some variables' values are limited number of integers. Some are rather wide range of numbers. "SEX", "EDUCATION", "MARRIAGE", "PAY_0" -"PAY_6", and "default.payment.next.month" look like categorical data.Other features seem to be numerical.
+It has 30000 rows and 25 columns. "Default.payment.next.month" is our target variable. Some variables' values are limited number of integers. Some are rather wide range of numbers. "SEX", "EDUCATION", "MARRIAGE", "PAY_0" -"PAY_6", and "default.payment.next.month" look like categorical data. Other features seem to be numerical.
 
 We know there are no NAs, Nulls in the dataset.
 
@@ -133,7 +133,7 @@ plot_correlation(original_default)
 
 Takeaways from this are;
 
-1.  Outcome (default.payment.next.month) has a strong positive correlation with PAY (positive), and PAY_AMT(negative), but a weak correlation with BILL_AMT.
+1.  Outcome (default.payment.next.month) has a positive correlation with PAY (positive), and PAY_AMT(negative), but a weak correlation with BILL_AMT.
 2.  Overall, LIMIT_BAL has a relatively strong correlation with other factors (except SEX).
 3.  EDUCATION, MARRIAGE, AGE have relatively strong correlation with one another.
 4.  EDUCATION and AGE have a relatively weak correlation with PAY and BILL_AMT respectively.
@@ -143,7 +143,7 @@ We will look into individual features further.
 
 ### 1 Outcome
 
-First, we look into the target variable, "default.payment.next.month". The data description says, "Default payment, 1=yes, 0=no.[^11]" We show the proportion of "0","1".
+First, we look into the target variable, "default.payment.next.month". The data description says, "Default payment, 1=yes, 0=no.[^11]" It is categorical data. We show the proportion of "0","1".
 
 [^11]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
@@ -184,7 +184,7 @@ Distribution is skewed right. Default clients seem to be gathered around lower r
 
 ### 3 "SEX"
 
-The values "1", "2" correspond to male and female respectively[^13]. Male is approximately 40% and female is 60%.
+The values "1", "2" correspond to male and female respectively[^13]. It is categorical data. Male is approximately 40% and female is 60%.
 
 [^13]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
@@ -212,7 +212,7 @@ There seemed to be little difference between genders.
 
 ### 4 "EDUCATION"
 
-In this variable, values are "1", "2", "3", "4", "5", "6". They are categorical values. The numbers have meanings as follows ; 1=graduate school, 2=university, 3=high school, 4=others, 5=unknown, 6=unknown[^14]. We draw a distribution and a default rates proportion graph of this variable.
+In this variable, values are "1", "2", "3", "4", "5", "6". It is categorical variable. The numbers have meanings as follows ; 1=graduate school, 2=university, 3=high school, 4=others, 5=unknown, 6=unknown[^14]. We draw a distribution and a default rates proportion graph of this variable.
 
 [^14]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
@@ -234,7 +234,7 @@ People whose final education is high school have relatively high default rate. O
 
 ### 5 "MARRIAGE"
 
-This is also categorical data. The value number means clients' marital status[^15]. 1=married, 2=single, 3=others. But this column includes undefined 0. There are 54 individuals whose values are 0.
+This is also categorical data. The value number means clients' marital status[^15]. 1=married, 2=single, 3=others. But this column includes undefined 0. It is also categorical variable. There are 54 individuals whose values are 0.
 
 [^15]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
@@ -262,7 +262,9 @@ Value 0 is negligible. Comparing married and single people, married people are a
 
 ### 6 "AGE"
 
-As its name indicates, it is numerical data.
+It is age in years[^16]. As its name indicates, it is numerical data.
+
+[^16]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
 ```{r summary of AGE, echo=FALSE}
 summary(original_default$AGE)
@@ -288,9 +290,9 @@ The number of clients are decreasing as they get older. Regarding the default cl
 
 ### 7 "PAY"
 
-This group includes variable from PAY_0, PAY_2 \~PAY_6[^16]. PAY_0 means repayment status in September, 2005. Then go back in time by a month until April, 2005, PAY_6. Their values are;
+This group includes variable from PAY_0, PAY_2 \~PAY_6[^17]. PAY_0 means repayment status in September, 2005. They go back in time by a month until April, 2005, PAY_6. They are categorical variables. Each column have values as follows;
 
-[^16]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
+[^17]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
 ```{r unique values of PAY, echo=FALSE}
 unique(original_default$PAY_0)
@@ -362,15 +364,15 @@ grid.arrange(graph_p0, graph_p2, graph_p3, graph_p4, graph_p5, graph_p6, nrow=2,
 
 ### 8 "BILL_AMT"
 
-This variable means an amount of bill statement. BILL_AMT1 is a record in September, 2005[^17]. Then go back in time by a month until April, 2005.
+This group indicate an amount of bill statement. BILL_AMT1 is a record in September, 2005[^18]. They go back in time by a month until April, 2005. They are numeric data.
 
-[^17]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
+[^18]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
 ```{r summary of BILL_AMT, echo=FALSE}
 summary(original_default[,13:18]) 
 ```
 
-This is numerical variable. Maximum values are fluctuating, but medians and means are decreasing from BILL_AMT1 to BILL_AMT6. Likewise previous variables, we plot BILL_AMT distribution filling each bar with its default rate.
+Maximum values are approximately 900000, except BILL_AMT3. And medians and means are decreasing from BILL_AMT1 to BILL_AMT6. Likewise previous variables, we plot BILL_AMT distribution filling each bar with its default rate.
 
 ```{r BILL_AMT1 graph, echo=FALSE, fig.height=3, fig.width=6}
 ggplot(data=original_default, aes(BILL_AMT1,fill= DEFAULT)) +
@@ -398,15 +400,15 @@ grid.arrange(b1,b2,b3,b4,b5,b6, nrow=2, ncol=3)
 
 ### 9 "PAY_AMT"
 
-This variable means an amount of previous payment. PAY_AMT1 is an amount of previous payment in September, 2005[^18]. Likewise BILL_AMT, PAY_AMT goes back in time by a month from August to April, 2005 which is PAY_AMT6.
+These variables mean an amount of previous payment. PAY_AMT1 is an amount of previous payment in September, 2005[^19]. Likewise BILL_AMT, PAY_AMT goes back in time by a month from August to April, 2005 which is PAY_AMT6. They are also numeric variables.
 
-[^18]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
+[^19]: <https://www.kaggle.com/uciml/default-of-credit-card-clients-dataset>
 
 ```{r echo=FALSE}
 summary(original_default[,19:24])
 ```
 
-This is numerical data. Their maximum values are fluctuating, but medians are gradually decreasing from PAY_AMT1 to PAY_AMT6.
+Their maximum values are fluctuating, but medians are gradually decreasing from PAY_AMT1 to PAY_AMT6.
 
 We plot PAY_AMT1 distribution filling each bar with its default rate.
 
@@ -448,7 +450,7 @@ Before going further, we will arrange our dataset to make it easier to investiga
 original_default <- original_default %>% select(-ID)
 ```
 
-Currently our data is composed of numerical values. Categorical values need to be changed to a factor. As we saw in data exploration, SEX,EDUCATION,MARRIAGE, PAY_0\~PAY_6 are categorical values.
+Currently our data is composed of numerical values. Categorical values need to be changed to a factor. As we saw in the data exploration section, SEX, EDUCATION, MARRIAGE, PAY_0\~PAY_6 are categorical values.
 
 ```{r factorizaion of variables, include=FALSE}
 original_default <- original_default %>%
@@ -541,7 +543,7 @@ confusionMatrix(base_pred, validation_set$DEFAULT)$byClass[2] #specificity
 confusionMatrix(base_pred, validation_set$DEFAULT)$byClass[11] #balanced accuracy
 ```
 
-As such, the credit company falsely give credit to a lot of clients who will fail to repay a debt. The loss for the company would be huge. Therefore, our goal is to pursue more accurate accuracy than guessing all responses are 0, taking account of improving specificity. We will use both *accuracy* and *balanced accuracy* to evaluate each model.
+As such, the credit company would falsely give credit to a lot of clients who will fail to repay a debt. The loss for the company would be huge. Therefore, our goal is to pursue more accurate accuracy than guessing all responses are 0, taking account of improving specificity. We will use both *accuracy* and *balanced accuracy* to evaluate each model.
 
 ### 2 Logistic Regression
 
@@ -561,15 +563,17 @@ glm_fewer_mdl <- glm(DEFAULT ~ LIMIT_BAL + SEX + EDUCATION + MARRIAGE + AGE +
 summary(glm_fewer_mdl)
 ```
 
+Note that due to factorization, some variables have been changed into dummy variables. For example, PAY_0 is changed to PAY_0-1 (minus 1), PAY_00, PAY_01, PAY_02, PAY_03, PAY_04, PAY_05, PAY_06, PAY_07, PAY_08. Right integer next to 0 means the level of the factor variables.
+
 From this, we understand that;
 
 -   Important variables :
 
-    LIMIT_BAL, SEX(whether a client is a female or not), PAY_0( whether its values are 0, 1, 2, 3, 4), , BILL_AMT1,PAY_AMT1
+    LIMIT_BAL, SEX(whether a client is a female or not), PAY_0( whether its values are 0, 1, 2, 3, 4), BILL_AMT1,PAY_AMT1
 
 Then fit the model to the validation set and show its confusion matrix.
 
-```{r confusion matrix of glm fewer model, echo=TRUE, message=FALSE, warning=TRUE}
+```{r confusion matrix of glm fewer model, echo=FALSE, message=FALSE, warning=TRUE}
 glm_fewer_prob <- predict(glm_fewer_mdl, validation_set,type="response")
 glm_fewer_pred <- ifelse(glm_fewer_prob >0.5,1,0)
 confusionMatrix(as.factor(glm_fewer_pred), validation_set$DEFAULT)$table
@@ -587,9 +591,9 @@ glm_f_results <- tibble(method = "glm fewer features",
 glm_f_results %>% knitr::kable()
 ```
 
-Another option to deal with many variables is step-wise regression. This method is to repeatedly examine statistical significance of each variable in a regression model[^19]. It includes three ways; forward selection, backward elimination, forward and backward elimination. Forward selection starts from no variable and add a variable step by step. Backward elimination starts from full model and subtract variables one by one. Forward and backward combines the two. One of the most convenient features of this method is we can get logistic regression results without knowing details of variables in the dataset.
+Another option to deal with many variables is step-wise regression. This method is to repeatedly examine statistical significance of each variable in a regression model[^20]. It includes three ways to conduct regression; forward selection, backward elimination, forward and backward elimination. Forward selection starts from no variable and add a variable step by step. Backward elimination starts from full model and subtract variables one by one. Forward and backward combines the two. One of the most convenient features of this method is we can get logistic regression results without knowing details of variables in the dataset.
 
-[^19]: It uses Akaike information criterion (AIC) .<https://en.wikipedia.org/wiki/Akaike_information_criterion>
+[^20]: It uses Akaike information criterion (AIC) .<https://en.wikipedia.org/wiki/Akaike_information_criterion>
 
 We use forward and backward step-wise regression, as it is commonly used. In the step-wise regression, we make two models, null model with no predictors and full model with all predictors at first. Then we use "step" function to conduct step-wise regression. The result;
 
@@ -658,9 +662,9 @@ $$
 \mbox{Gini}(j) = \sum_{k=1}^K \hat{p}_{j,k}(1-\hat{p}_{j,k})
 $$
 
-$\hat{p}_{j,k}$ as the proportion of observations in partition $\ {j}$ that are of class $\ {k}$.[^20] If there are lots of classes in the partition, Gini index, also called Gini impurity, increases up to 1. On the other hand, if there are few classes in the partition it decreases down to 0. If you predict perfectly, the index is 0.
+$\hat{p}_{j,k}$ as the proportion of observations in partition $\ {j}$ that are of class $\ {k}$.[^21] If there are lots of classes in the partition, Gini index, also called Gini impurity, increases up to 1. On the other hand, if there are few classes in the partition it decreases down to 0. If you predict perfectly, the index is 0.
 
-[^20]: Irizarry, Rafael A, "Introduction to Data Science: Data Analysis and Prediction Algorithms with R, 31.10.4 Classification (decision) trees". *Internet archive*, <https://rafalab.github.io/dsbook/examples-of-algorithms.html#classification-decision-trees>
+[^21]: Irizarry, Rafael A, "Introduction to Data Science: Data Analysis and Prediction Algorithms with R, 31.10.4 Classification (decision) trees". *Internet archive*, <https://rafalab.github.io/dsbook/examples-of-algorithms.html#classification-decision-trees>
 
 We use "rpart" function to form a model, then predict the outcome.
 
@@ -705,6 +709,10 @@ rpart_results %>% knitr::kable()
 
 Compared with the step-wise logistic regression models, its accuracy has improved but its balanced accuracy got worse. Its balanced accuracy returned to the level of the regression with fewer variables.
 
+```{r comaprison decision tree and regression 1, echo=FALSE}
+bind_rows(rpart_results, glm_s_results, glm_f_results) %>% knitr::kable()
+```
+
 We try to improve this result using other function "train" in caret package. When we use "train" , it conducts "cross validation" and finds optimal parameters in the decision tree algorithm.
 
 One of the cross validation methods is k-fold cross validation. It splits the dataset into k "folds" randomly. For each group, it takes the group as a test dataset, and takes other groups as a training dataset. Then it fits a model on the training set and evaluates it on the test set. This procedure is repeated until every K-fold serve as the test set. Finally it summarizes the performance of the model as the average of these procedures.
@@ -748,7 +756,7 @@ Then draw a decision tree.
 rpart.plot(rpart_tuned_mdl$finalModel)
 ```
 
-As PAY variables are factored and turned into a dummy variable, a node "PAY_02", for example, is asking whether a client's PAY_0 is "-1" or not. "-1" is the second level in the PAY_0 original column.
+As mentioned before, PAY variables are factored and turned into a dummy variable.
 
 Fit the model to the validation set and show its confusion matrix.
 
@@ -771,20 +779,20 @@ rpart_tuned_results %>% knitr::kable()
 
 Comparing two decision models, the tuned model has improved in terms of specificity and balanced accuracy. But accuracy has got worse. Both performed worse than the step-wise logistic regression in terms of balanced accuracy.
 
-```{r echo=FALSE}
-bind_rows(rpart_results, rpart_tuned_results) %>% knitr::kable()
+```{r comaprison decision tree and regression 2, echo=FALSE}
+bind_rows(rpart_tuned_results, rpart_results ,glm_s_results, glm_f_results) %>% knitr::kable()
 
 ```
 
 ### 4 Random Forest
 
-Decision tree algorithm is easy to understand as it follow human decision making process. However, it "can easily over-train" and "is not very flexible."[^21] To improve this, we introduce random forest algorithm.
+Decision tree algorithm is easy to understand as it follow human decision making process. However, it "can easily over-train" and "is not very flexible."[^22] To improve this, we introduce random forest algorithm.
 
-[^21]: Irizarry, Rafael A, "Introduction to Data Science: Data Analysis and Prediction Algorithms with R, 31.10.4 Classification (decision) trees". *Internet archive*, <https://rafalab.github.io/dsbook/examples-of-algorithms.html#classification-decision-trees>
+[^22]: Irizarry, Rafael A, "Introduction to Data Science: Data Analysis and Prediction Algorithms with R, 31.10.4 Classification (decision) trees". *Internet archive*, <https://rafalab.github.io/dsbook/examples-of-algorithms.html#classification-decision-trees>
 
-Random forest is one of the most popular machine learning algorithms. As its name implies, it makes multiple trees "**randomly** different" from a dataset, then produce a final prediction based on the average prediction of "combination of trees", namely "**forest**".[^22]
+Random forest is one of the most popular machine learning algorithms. As its name implies, it makes multiple trees "**randomly** different" from a dataset, then produce a final prediction based on the average prediction of "combination of trees", namely "**forest**".[^23]
 
-[^22]: Irizarry, Rafael A, "Introduction to Data Science: Data Analysis and Prediction Algorithms with R, 31.11 Random forests". *Internet archive*, <https://rafalab.github.io/dsbook/examples-of-algorithms.html#random-forests>
+[^23]: Irizarry, Rafael A, "Introduction to Data Science: Data Analysis and Prediction Algorithms with R, 31.11 Random forests". *Internet archive*, <https://rafalab.github.io/dsbook/examples-of-algorithms.html#random-forests>
 
 In this paper, we use "ranger" function. And show the model details;
 
@@ -793,7 +801,7 @@ set.seed(2021, sample.kind = "Rounding")
 rf_mdl <- ranger(
   formula = DEFAULT ~ ., 
   data = train_set,
-  importance = "impurity",#use gini index
+  importance = "impurity",
   probability = F)
 ```
 
@@ -832,7 +840,13 @@ rf_results <- tibble(method = "random forest",
 rf_results %>% knitr::kable()
 ```
 
-The results has been much improved, especially specificity, compared to other models. Can we improve the result further? Using "modelLookup", we can see parameters which can be tuned.
+The results has been much improved, especially specificity, compared to other models.
+
+```{r comparison random forest, decision trees, and logisitic regression, echo=FALSE}
+bind_rows(rf_results, rpart_tuned_results, rpart_results ,glm_s_results, glm_f_results) %>% knitr::kable()
+```
+
+Can we improve the result further? Using "modelLookup", we can see parameters which can be tuned.
 
 ```{r ranger tunable parameters, echo=FALSE}
 modelLookup("ranger")
@@ -874,7 +888,7 @@ ggplot(imp_cv_df, aes(x=Variable, y=Importance)) +
   geom_bar(stat="identity") +coord_flip()
 ```
 
-Overall, the same trend is observed in the tuned random forest model. Whether PAY_0 value is -1(the second level) is important to determine the performance of the model.
+Overall, the same trend as the previous random forest model is observed in the tuned random forest model.
 
 Then fit the model to the validation set and show its confusion matrix;
 
@@ -886,19 +900,19 @@ confusionMatrix(rf_cv_pred, validation_set$DEFAULT)$table
 Statistic metrics;
 
 ```{r statistic metrics of random foreset tuned model, echo=FALSE}
-rf_tuned_results <- tibble(method = "random forest tuned",
+rf_cv_results <- tibble(method = "random forest tuned",
                   Accuracy =confusionMatrix(rf_cv_pred, validation_set$DEFAULT)$overall[1],
                   Sensitivity =confusionMatrix(rf_cv_pred, validation_set$DEFAULT)$byClass[1],
                   Specificity =confusionMatrix(rf_cv_pred, validation_set$DEFAULT)$byClass[2],
                   Balanced_Accuracy =confusionMatrix(rf_cv_pred, validation_set$DEFAULT)$byClass[11])
                   
-rf_tuned_results %>% knitr::kable()
+rf_cv_results %>% knitr::kable()
 ```
 
-Comparing these two random forest models, the results of the tuned model gets worse than the default model in terms of both accuracy and balanced accuracy. There occurred over fitting in the tuned model.
+Comparing these two random forest models, the results of the tuned model gets worse than the default model in terms of both accuracy and balanced accuracy. Over fitting seems to be occurring in the tuned model.
 
 ```{r comparison of the two random forest model, echo=FALSE}
-bind_rows(rf_results, rf_tuned_results) %>% knitr::kable()
+bind_rows(rf_cv_results,rf_results)%>% knitr::kable()
 
 ```
 
@@ -907,7 +921,7 @@ bind_rows(rf_results, rf_tuned_results) %>% knitr::kable()
 We look at the table in which the results of our 6 models are shown.
 
 ```{r echo=FALSE}
-bind_rows(glm_s_results, glm_f_results, rpart_results, rpart_tuned_results, rf_results, rf_tuned_results)%>% knitr::kable()
+bind_rows(glm_s_results, glm_f_results, rpart_results, rpart_tuned_results, rf_results, rf_cv_results)%>% knitr::kable()
 ```
 
 Among them, the best performance in terms of both accuracy and balanced accuracy is produced by "**random forest model**". As we mentioned before, **PAY_0** is the most important variables compared with others. Then follows **BILL_AMT1**, **PAY_AMT1**, and **LIMIT_BAL**, and **AGE.**

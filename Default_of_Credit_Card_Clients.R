@@ -488,7 +488,12 @@ glm_s_results <- tibble(method = "glm step wise",
                         Specificity =confusionMatrix(as.factor(step_pred), validation_set$DEFAULT)$byClass[2],
                         Balanced_Accuracy =confusionMatrix(as.factor(step_pred), validation_set$DEFAULT)$byClass[11])
 
-glm_s_results %>% knitr::kable() #show in a table
+glm_s_results %>% knitr::kable() 
+#show in a table using "kable" function in knitr package
+
+#comparing two models using "bind_rows" function to make table
+bind_rows(glm_f_results, glm_s_results) %>% knitr::kable()
+#show in a table using "kable" function in knitr package
 
 ###############
 #decision tree 
@@ -521,6 +526,9 @@ rpart_results <- tibble(method = "rpart",
 
 rpart_results %>% knitr::kable() 
 #show in a table using "kable" function in knitr package
+
+#comarison decision tree and logistic regression
+bind_rows(rpart_results, glm_s_results, glm_f_results) %>% knitr::kable()
 
 #find parameters using "modelLookup" function in caret package
 modelLookup("rpart")
@@ -567,8 +575,9 @@ rpart_tuned_results <- tibble(method = "rpart tuned",
 rpart_tuned_results %>% knitr::kable()  
 #show in a table using "kable" function in knitr package
 
-#compare the two decision tree models performance
-bind_rows(rpart_results, rpart_tuned_results) %>% knitr::kable()
+#compare the two decision tree models' and logistic regression models' performance
+bind_rows(rpart_tuned_results,rpart_results, 
+          glm_s_results, glm_f_results) %>% knitr::kable()
 #show in a table using "kable" function in knitr package
 
 ###############
@@ -612,6 +621,12 @@ rf_results <- tibble(method = "random forest",
 rf_results %>% knitr::kable() 
 #show in a table using "kable" function in knitr package
 
+#compare random forest result with other models
+bind_rows(rf_results, 
+          rpart_tuned_results, rpart_results,
+          glm_s_results, glm_f_results) %>% knitr::kable()
+#show in a table using "kable" function in knitr package
+
 #find parameters which can be tuned using "modelLookup" function
 modelLookup("ranger")
 
@@ -652,17 +667,17 @@ rf_cv_pred <- predict(rf_cv_mdl, validation_set)
 confusionMatrix(rf_cv_pred, validation_set$DEFAULT)$table
 
 #show metrics, accuracy, sensitivity, specificity, balanced accuracy
-rf_tuned_results <- tibble(method = "random forest tuned",
+rf_cv_results <- tibble(method = "random forest tuned",
                            Accuracy =confusionMatrix(rf_cv_pred, validation_set$DEFAULT)$overall[1],
                            Sensitivity =confusionMatrix(rf_cv_pred, validation_set$DEFAULT)$byClass[1],
                            Specificity =confusionMatrix(rf_cv_pred, validation_set$DEFAULT)$byClass[2],
                            Balanced_Accuracy =confusionMatrix(rf_cv_pred, validation_set$DEFAULT)$byClass[11])
 
-rf_tuned_results %>% knitr::kable()
+rf_cv_results %>% knitr::kable()
 #show in a table using "kable" function in knitr package
 
 #compare the two random forest models performance
-bind_rows(rf_results, rf_tuned_results) %>% knitr::kable()
+bind_rows(rf_cv_results, rf_results) %>% knitr::kable()
 #show in a table using "kable" function in knitr package
 
 ################################################################################
@@ -675,7 +690,7 @@ bind_rows(glm_s_results,
           rpart_results, 
           rpart_tuned_results, 
           rf_results, 
-          rf_tuned_results)%>% 
+          rf_cv_results)%>% 
   knitr::kable()
 #show in a table using "kable" function in knitr package
 
